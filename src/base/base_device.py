@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 class BaseDevice(ABC):
-    def __init__(self, device_id: str, device_name: str, price: float, purcharse_date: datetime, location: str):
+    def __init__(self, device_id: str, device_name: str, price: float, purchase_date: datetime, location: str):
         self.device_id = device_id
         self.device_name = device_name
         self.price = price
-        self.purcharse_date = purcharse_date
+        self.purchase_date = purchase_date
         self.location = location
         self.maintenance_history = []
         self.status = "Active"
@@ -34,6 +34,11 @@ class BaseDevice(ABC):
             "assigned_to": self.assigned_to,
             "specs": self.get_specs()
         }
+    
+    @abstractmethod
+    def maintanance_required(self) -> bool:
+        """Determine if the device requires maintenance."""
+        pass
     
 
     
