@@ -2,24 +2,20 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 class BaseDevice(ABC):
-    def __init__(self, device_id: str, device_name: str, price: float, purcharse_date: datetime):
+    def __init__(self, device_id: str, device_name: str, price: float, purcharse_date: datetime, location: str):
         self.device_id = device_id
         self.device_name = device_name
         self.price = price
         self.purcharse_date = purcharse_date
-        self.assigned_to = None
+        self.location = location
         self.maintenance_history = []
+        self.status = "Active"
 
     @abstractmethod
     def get_specs(self) -> dict:
         """Return the specifications of the device."""
         pass
 
-
-    def assign_to(self, employee_id: str):
-        """Assign the device to an employee."""
-        self.assigned_to = employee_id
-        print(f"Device {self.device_id} assigned to employee {employee_id}.")
 
     def add_maintenance_log(self, note: str, cost: float):
         log = {
