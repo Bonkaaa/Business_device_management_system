@@ -3,13 +3,18 @@ from datetime import datetime
 
 class BaseDevice(ABC):
     def __init__(self, device_id: str, device_name: str, price: float, purchase_date: datetime, location: str):
-        self.device_id = device_id
+        # Protected attributes
+        self._device_id = device_id
+        self._price = price
+        self._purchase_date = purchase_date
+
+        # Public attributes
         self.device_name = device_name
-        self.price = price
-        self.purchase_date = purchase_date
         self.location = location
-        self.maintenance_history = []
-        self.status = "Active"
+        self._maintenance_history = []
+
+        # Default attributes
+        self.status = None
 
     @abstractmethod
     def get_specs(self) -> dict:
