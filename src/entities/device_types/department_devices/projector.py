@@ -1,5 +1,6 @@
 from src.base import BaseDevice
 from datetime import datetime
+from employee import Employee
 
 class Projector(BaseDevice):
     def __init__(
@@ -9,16 +10,30 @@ class Projector(BaseDevice):
         price: float, 
         purchase_date: datetime, 
         location: str,
-        assigned_to: str,
+        assigned_to: Employee | None,
         lumens: int,                # độ sáng
         resolution: str,            # ví dụ: "1080p", "4K"
         lamp_hours: int,            # tuổi thọ bóng đèn
         is_portable: bool,
 
     ):
-        super().__init__(device_id, device_name, price, purchase_date, location)
+        """
+        Khởi tạo một đối tượng Projector.
         
-        self.assigned_to = assigned_to
+        Args:
+            device_id (str): ID của thiết bị.
+            device_name (str): Tên của thiết bị.
+            price (float): Giá của thiết bị.
+            purchase_date (datetime): Ngày mua thiết bị.
+            location (str): Vị trí của thiết bị.
+            assigned_to (Employee | None): Nhân viên được giao thiết bị.
+            lumens (int): Độ sáng của máy chiếu.
+            resolution (str): Độ phân giải của máy chiếu.
+            lamp_hours (int): Tuổi thọ bóng đèn của máy chiếu.
+            is_portable (bool): Máy chiếu có di động hay không.
+        """
+        super().__init__(device_id, device_name, price, purchase_date, location)
+        self._assigned_to = assigned_to
 
         if lumens <= 0:
             raise ValueError("Lumens must be a positive integer.")
@@ -28,6 +43,9 @@ class Projector(BaseDevice):
         self._is_portable = is_portable
 
     def get_specs(self) -> dict:
+        """
+        Trả về các thông số kỹ thuật của máy chiếu dưới dạng chuỗi.
+        """
         portable_str = "Di động" if self._is_portable else "Cố định"
         return (
             f"{self._lumens} lumens | {self._resolution} | "
@@ -37,7 +55,7 @@ class Projector(BaseDevice):
     def to_dict(self) -> dict:
         base_dict = super().to_dict()
         base_dict.update({
-            "assigned_to": self.assigned_to,
+            "assigned_to": self._assigned_to,
             "lumens": self._lumens,
             "resolution": self._resolution,
             "lamp_hours": self._lamp_hours,
@@ -46,6 +64,9 @@ class Projector(BaseDevice):
         return base_dict
     
     def maintanance_required(self) -> bool:
+        """
+        Xác định xem máy chiếu có cần bảo trì hay không.
+        """
         return self._lamp_hours > 2000
     
     def __str__(self):

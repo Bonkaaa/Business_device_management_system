@@ -1,7 +1,11 @@
 from src.base import BaseDevice
 from datetime import datetime
+from employee import Employee
 
 class DeskPhone(BaseDevice):
+    """
+    Đại diện cho một điện thoại bàn trong thiết bị của phòng ban.
+    """
     def __init__(
         self, 
         device_id: str, 
@@ -9,15 +13,33 @@ class DeskPhone(BaseDevice):
         price: float, 
         purchase_date: datetime, 
         location: str,
+        assigned_to: Employee | None,
         model: str,
         support_voip: bool,
     ):
-        super().__init__(device_id, device_name, price, purchase_date, location)
-        self.model = model
+        """
+        Khởi tạo một đối tượng DeskPhone.
 
+        Args:
+            device_id (str): ID của thiết bị.
+            device_name (str): Tên của thiết bị.
+            price (float): Giá của thiết bị.
+            purchase_date (datetime): Ngày mua thiết bị.
+            location (str): Vị trí của thiết bị.
+            assigned_to (Employee | None): Nhân viên được giao thiết bị.
+            model (str): Mẫu điện thoại bàn.
+            support_voip (bool): Cho biết điện thoại có hỗ trợ VoIP hay không.
+        """
+        super().__init__(device_id, device_name, price, purchase_date, location)
+        self._assigned_to = assigned_to
+
+        self.model = model
         self._support_voip = support_voip
 
     def get_specs(self) -> str:
+        """
+        Trả về các thông số kỹ thuật của điện thoại bàn dưới dạng chuỗi.
+        """
         voip = "Hỗ trợ VoIP" if self._support_voip else "Không hỗ trợ VoIP"
         return f"{self.model} | {voip}"
     
@@ -30,6 +52,9 @@ class DeskPhone(BaseDevice):
         return base_dict
     
     def maintanance_required(self) -> bool:
+        """
+        Xác định xem điện thoại bàn có cần bảo trì hay không.
+        """
         # No specific maintenance criteria for desk phones
         if not self._support_voip:
             return True
