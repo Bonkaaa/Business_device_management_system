@@ -1,0 +1,64 @@
+@startuml main
+left to right direction
+skinparam packageStyle rectangle
+
+' --- CẤU HÌNH GIAO DIỆN ---
+skinparam packagePadding 20    
+skinparam usecaseBackgroundColor White
+
+' --- PHẦN ĐÃ SỬA: Thêm \n và khoảng trắng để tiêu đề to ra và né đường kẻ ---
+package "\n Hệ thống Quản lý thiết bị CNTT \n\n\n\n\n " {
+    
+    usecase "Đăng nhập" as UC_Login
+
+    usecase "Thêm thiết bị mới" as UC_AddDevice
+    usecase "Cập nhật thiết bị" as UC_UpdateDevice
+    usecase "Thanh lý thiết bị" as UC_Retire
+
+    usecase "Yêu cầu thiết bị" as UC_Request
+    usecase "Duyệt yêu cầu" as UC_ApproveReq
+    usecase "Từ chối yêu cầu" as UC_RejectReq
+
+    usecase "Giao thiết bị" as UC_Assign
+    usecase "Thu hồi thiết bị" as UC_Return
+
+    usecase "Báo hỏng / Yêu cầu bảo trì" as UC_Report
+    usecase "Xử lý bảo trì" as UC_ProcessMaint
+    usecase "Đóng phiếu bảo trì" as UC_CloseMaint
+
+    usecase "Quản lý Nhân viên/Phòng ban" as UC_ManageUser
+    usecase "Xuất báo cáo" as UC_ReportStat
+}
+
+' --- KHAI BÁO ACTOR (Giữ nguyên thứ tự mặc định của bạn) ---
+actor "Quản trị viên" as A
+actor "Nhân viên" as E
+actor "Kỹ thuật viên bảo trì" as T
+
+
+' --- CÁC ĐƯỜNG NỐI ---
+A --> UC_Login
+A --> UC_AddDevice
+A --> UC_UpdateDevice
+A --> UC_Retire
+A --> UC_Assign
+A --> UC_Return
+A --> UC_ManageUser
+A --> UC_ReportStat
+A --> UC_Request
+
+E --> UC_Login
+E --> UC_Request
+E --> UC_Report
+
+T --> UC_Login
+T --> UC_ProcessMaint
+T --> UC_CloseMaint
+
+UC_ApproveReq ..> UC_Request : extends
+UC_RejectReq ..> UC_Request : extends
+
+UC_Report ..> UC_ProcessMaint : extends
+UC_ProcessMaint ..> UC_CloseMaint : extends
+
+@enduml
