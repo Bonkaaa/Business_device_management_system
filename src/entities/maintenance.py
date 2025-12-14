@@ -1,57 +1,59 @@
 from datetime import datetime
+from .device import Device
+from .employee import Employee
+from utils.constant_class import MaintenanceStatus
 
 class MaintenanceTicket:
     def __init__(
         self,
         ticket_id: str,
-        device_id: str,
         issue_description: str,
+        cost_estimate: float,
+        status: MaintenanceStatus,
         reported_date: datetime,
-        cost_estimate: float = 0.0,
-        status: str = "Open"
+
+        device: Device,
+        reporter: Employee
     ):
+        # Public attributes
         self.ticket_id = ticket_id
-        self.device_id = device_id
-        self.issue_description = issue_description
-        self.reported_date = reported_date
-        self.cost_estimate = cost_estimate
-        self.status = status
+        self.device = device
+        self.reporter = reporter
 
-        self.date_completed = None
-        self.technician_notes = None
+        # Protected attributes
+        self._issue_description = issue_description
+        self._cost_estimate = cost_estimate
+        self._status = status
+        self._reported_date = reported_date
 
-    def resolve_ticket(self, technician_notes: str, date_completed: datetime, cost: float):
-        self.technician_notes = technician_notes
-        self.date_completed = datetime.now().strftime("%d-%m-%Y")
-        self.cost = cost
-        self.status = "Closed"
+        self._date_resolved = None
+        self.__technician_notes = ""
 
-    def __str__(self):
-        return f"[{self.status}] Ticket {self.ticket_id} - Device: {self.device_id} - Lỗi: {self.issue_description}"
-    
-    def to_dict(self):
+        self.__technician_notes += f"[Khởi tạo] Vào ngày {reported_date.isoformat()}, phiếu bảo trì {ticket_id} đã được tạo cho thiết bị {device.get_id()} bởi nhân viên {reporter.get_id() - reporter.get_name()} với mô tả sự cố: {issue_description}."
+
+    def update_status(self, new_status: MaintenanceStatus):
+        if new_status not in MaintenanceStatus:
+            raise ValueError(f"Trạng thái bảo trì không hợp lệ: {new_status}")
+        self._status = new_status
+
+    def resolve_ticket(self, technician_notes: str | None = None):
+        self._status = MaintenanceStatus.RESOLVED
+        self.date_resolved = datetime.now()
+        self.technician_notes += f"[Giải quyết] Vào ngày {self.date_resolved.isoformat()}, phiếu bảo trì {self.ticket_id} đã được giải quyết."
+        if technician_notes:
+            self.technician_notes += f" Ghi chú kỹ thuật viên: {technician_notes}"
+
+    def to_dict(self) -> dict:
         return {
             "ticket_id": self.ticket_id,
-            "device_id": self.device_id,
-            "issue_description": self.issue_description,
-            "reported_date": self.reported_date.strftime("%d-%m-%Y"),
-            "cost_estimate": self.cost_estimate,
-            "status": self.status,
-            "date_completed": self.date_completed,
-            "technician_notes": self.technician_notes
+            "issue_description": self._issue_description,
+            "cost_estimate": self._cost_estimate,
+            "status": self._status.value,
+            "reported_date": self._reported_date.isoformat(),
+            "date_resolved": self._date_resolved.isoformat() if self._date_resolved else None,
+            "technician_notes": self.__technician_notes,
+            "device_id": self.device.get_id(),
+            "reporter_id": self.reporter.get_id(),
         }
+
     
-    @classmethod
-    def from_dict(cls, data: dict):
-        ticket = cls(
-            ticket_id=data["ticket_id"],
-            device_id=data["device_id"],
-            issue_description=data["issue_description"],
-            reported_date=datetime.strptime(data["reported_date"], "%d-%m-%Y"),
-            cost_estimate=data.get("cost_estimate", 0.0),
-            status=data.get("status", "Open")
-        )
-        ticket.date_completed = data.get("date_completed")
-        ticket.technician_notes = data.get("technician_notes", "")
-        return ticket
-        
