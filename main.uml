@@ -1,0 +1,110 @@
+@startuml main
+' Packages
+package "src.base" as base {
+  class BaseModel {
+    +id: int
+    +save(): void
+    +delete(): void
+  }
+  class BaseRepository {
+    +get(id): BaseModel
+    +list(): List<BaseModel>
+    +add(obj): void
+    +remove(id): void
+  }
+  class BaseService {
+    +create(data): BaseModel
+    +update(id, data): BaseModel
+    +delete(id): void
+    +get(id): BaseModel
+  }
+}
+
+package "src.entities" as entities {
+  class Device {
+    +id: int
+    +name: str
+    +type: str
+    +status: str
+  }
+  class User {
+    +id: int
+    +username: str
+    +email: str
+    +role: str
+  }
+  class Department {
+    +id: int
+    +name: str
+  }
+  class MaintenanceRecord {
+    +id: int
+    +device_id: int
+    +date: date
+    +notes: str
+  }
+}
+
+package "src.ui" as ui {
+  class MainWindow {
+    +show(): void
+  }
+  class DeviceForm {
+    +open(device_id=None): void
+  }
+  class UserForm {
+    +open(user_id=None): void
+  }
+  class Dashboard {
+    +render(): void
+  }
+}
+
+package "src.utils" as utils {
+  class DB {
+    +connect(): Connection
+    +execute(query): Result
+  }
+  class Validators {
+    +validate_device(data): bool
+    +validate_user(data): bool
+  }
+  class Logger {
+    +info(msg): void
+    +error(msg): void
+  }
+}
+
+' Relationships
+Device ..|> BaseModel
+User ..|> BaseModel
+Department ..|> BaseModel
+MaintenanceRecord ..|> BaseModel
+
+BaseRepository <|-- DeviceRepository : <<specializes>>
+BaseRepository <|-- UserRepository
+BaseRepository <|-- DepartmentRepository
+BaseRepository <|-- MaintenanceRepository
+
+BaseService <|-- DeviceService
+BaseService <|-- UserService
+BaseService <|-- DepartmentService
+BaseService <|-- MaintenanceService
+
+DeviceService --> DeviceRepository : uses
+UserService --> UserRepository : uses
+DepartmentService --> DepartmentRepository : uses
+MaintenanceService --> MaintenanceRepository : uses
+
+DeviceRepository --> DB : <<uses>>
+UserRepository --> DB : <<uses>>
+
+UI.MainWindow --> UI.Dashboard : contains
+UI.Dashboard --> DeviceService : reads
+UI.DeviceForm --> DeviceService : create/update
+UI.UserForm --> UserService : create/update
+
+All --> Utils.Logger : <<uses>>
+All --> Utils.Validators : <<uses>>
+
+@enduml

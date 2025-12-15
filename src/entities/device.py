@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 from datetime import datetime
-from utils.constant_class import DeviceStatus
+from utils.constant_class import DeviceStatus, DeviceQualityStatus
+from base import Assignee
 from utils.constant import DEVICE_CATEGORY
 
 
@@ -12,7 +13,7 @@ class Device:
         category: str, 
         status: DeviceStatus,
         purchase_date: datetime,
-        assigned_to: Optional[str] | None,
+        assigned_to: Assignee | None,
         specifications: Dict[str, Any],
     ):
         # Private attributes
@@ -20,6 +21,7 @@ class Device:
         self.__purchase_date = purchase_date
         self.__assigned_to = assigned_to
         self.__specifications = specifications
+        self.__device_quality_status = DeviceQualityStatus.GOOD
 
         # Protected attributes
         self._device_id = device_id
@@ -51,10 +53,6 @@ class Device:
             "status": self.__status,
             "assigned_to": self.__assigned_to,
         }
-    
-    def update_status(self, new_status: DeviceStatus, assigned_to: Optional[str] = None):
-        self.__status = new_status
-        self.__assigned_to = assigned_to
 
     def is_available(self) -> bool:
         return self.__status == DeviceStatus.AVAILABLE
@@ -70,13 +68,26 @@ class Device:
             "specifications": self.__specifications,
         }
     
-    def update_status_and_assignee(
+    def get_quality_status(self) -> DeviceQualityStatus:
+        return self.__device_quality_status
+
+    def update_device_status(
         self,
         new_status: DeviceStatus,
-        assigned_to: Optional[str] = None,
     ):
         self.__status = new_status
+    
+    def update_assigned_to(
+        self,
+        assigned_to: Optional[str],
+    ):
         self.__assigned_to = assigned_to
+
+    def update_quality_status(
+        self,
+        new_quality_status: DeviceQualityStatus,
+    ):
+        self.__device_quality_status = new_quality_status
     
     
 

@@ -8,7 +8,6 @@ class MaintenanceTicket:
         self,
         ticket_id: str,
         issue_description: str,
-        cost_estimate: float,
         status: MaintenanceStatus,
         reported_date: datetime,
 
@@ -22,7 +21,6 @@ class MaintenanceTicket:
 
         # Protected attributes
         self._issue_description = issue_description
-        self._cost_estimate = cost_estimate
         self._status = status
         self._reported_date = reported_date
 
@@ -36,10 +34,14 @@ class MaintenanceTicket:
             raise ValueError(f"Trạng thái bảo trì không hợp lệ: {new_status}")
         self._status = new_status
 
-    def resolve_ticket(self, technician_notes: str | None = None):
+    def resolve_ticket(
+        self, 
+        technician_notes: str | None = None, 
+        costs: float | None = None
+    ):
         self._status = MaintenanceStatus.RESOLVED
         self.date_resolved = datetime.now()
-        self.technician_notes += f"[Giải quyết] Vào ngày {self.date_resolved.isoformat()}, phiếu bảo trì {self.ticket_id} đã được giải quyết."
+        self.technician_notes += f"[Giải quyết] Vào ngày {self.date_resolved.isoformat()}, phiếu bảo trì {self.ticket_id} đã được giải quyết. Tiền công: {costs if costs is not None else 'N/A'}."
         if technician_notes:
             self.technician_notes += f" Ghi chú kỹ thuật viên: {technician_notes}"
 
@@ -47,7 +49,6 @@ class MaintenanceTicket:
         return {
             "ticket_id": self.ticket_id,
             "issue_description": self._issue_description,
-            "cost_estimate": self._cost_estimate,
             "status": self._status.value,
             "reported_date": self._reported_date.isoformat(),
             "date_resolved": self._date_resolved.isoformat() if self._date_resolved else None,
@@ -55,5 +56,11 @@ class MaintenanceTicket:
             "device_id": self.device.get_id(),
             "reporter_id": self.reporter.get_id(),
         }
+    
+    def get_id(self) -> str:
+        return self.ticket_id
+    
+    def get_status(self) -> MaintenanceStatus:
+        return self._status
 
     

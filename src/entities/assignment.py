@@ -10,9 +10,6 @@ class Assignment:
         assignment_id: str,
         initial_date: datetime,
         expected_return_date: datetime | None,
-        actual_return_date: datetime | None,
-        return_status: DeviceStatus | None,
-        quality_status: DeviceQualityStatus | None,
         notes: str | None,
 
         device: Device,
@@ -21,9 +18,7 @@ class Assignment:
         # Private attributes
         self.__initial_date = initial_date
         self.__expected_return_date = expected_return_date
-        self.__actual_return_date = actual_return_date
-        self.__return_status = return_status
-        self.__quality_status = quality_status
+
 
         # Protected attributes
         self._assignment_id = assignment_id
@@ -31,12 +26,21 @@ class Assignment:
         self._device = device
         self._assignee = assignee
 
-        self._device_status = DeviceStatus.ASSIGNED
         self._notes += f"[Khởi tạo] Vào ngày {initial_date.isoformat()}, thiết bị {assignment_id} đã được giao cho người dùng/phòng ban {assignee.get_id() - assignee.get_name()}."
         self.__status = AssignmentStatus.OPEN
+        self.__quality_status = self._device.get_status()["status"]
 
     def get_id(self) -> str:
         return self._assignment_id
+    
+    def get_expected_return_date(self) -> datetime:
+        return self.__expected_return_date
+    
+    def get_status(self) -> AssignmentStatus:
+        return self.__status
+    
+    def get_device(self) -> Device:
+        return self._device
     
     def to_dict(self) -> dict:
         device_id = self._device.get_id()
@@ -46,10 +50,10 @@ class Assignment:
             "assignment_id": self._assignment_id,
             "initial_date": self.__initial_date.isoformat(),
             "expected_return_date": self.__expected_return_date.isoformat() if self.__expected_return_date else None,
-            "actual_return_date": self.__actual_return_date.isoformat() if self.__actual_return_date else None,
-            "return_status": self.__return_status.value if self.__return_status else None,
+            "actual_return_date": self.__actual_return_date.isoformat() if hasattr(self, '_Assignment__actual_return_date') and self.__actual_return_date else None,
+            "return_quality_status": self.__return_quality_status.value if hasattr(self, '_Assignment__return_quality_status') and self.__return_quality_status else None,
             "quality_status": self.__quality_status.value if self.__quality_status else None,
-            "notes": self._notes,
+            "notes":  self._notes,
             "device_id": device_id,
             "assignee_id": assignee_id,
             "status": self.__status.value,
@@ -60,6 +64,7 @@ class Assignment:
         return_quality_status: DeviceQualityStatus,
         actual_return_date: datetime | None = None,
         return_date_today: bool = False,
+        broken_status: bool = False,
     ):
         self.__return_quality_status = return_quality_status
 
@@ -75,11 +80,17 @@ class Assignment:
         else:
             self.__status = AssignmentStatus.CLOSED
 
-        # Update device status to AVAILABLE
-        self._device.update_status_and_assignee(DeviceStatus.AVAILABLE, None)
+        # Update device status and quality status and assignee
+        if broken_status:
+            self._device.update_device_status(DeviceStatus.OUT_OF_SERVICE)
+        else:
+            self._device.update_device_status(DeviceStatus.AVAILABLE)
+
+        self._device.update_quality_status(return_quality_status)
+        self._device.update_device_assignee(None)
 
         # Update notes
-        self._notes += f"[Đóng] Vào ngày {self.__actual_return_date.isoformat() if self.__actual_return_date else 'N/A'}, thiết bị {self._device.get_id()} đã được trả về với tình trạng chất lượng: {return_quality_status.value}."
+        self._notes += f"[Đóng] Vào ngày {self.__actual_return_date.isoformat() if self.__actual_return_date else 'N/A'}, thiết bị {self._device.get_id()} đã được trả về với tình trạng chất lượng: {self.__return_quality_status}."
 
 
         

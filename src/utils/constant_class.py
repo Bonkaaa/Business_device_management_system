@@ -6,6 +6,7 @@ class DeviceStatus(Enum):
     AVAILABLE = "available"
     ASSIGNED = "assigned"
     MAINTENANCE = "maintenance"
+    OUT_OF_SERVICE = "out_of_service"
 
 class DeviceQualityStatus(Enum):
     GOOD = "good"
@@ -18,7 +19,6 @@ class AssignmentStatus(Enum):
     OVERDUE = "overdue"
 
 class MaintenanceStatus(Enum):
-    REPORTED = "reported"
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
 
