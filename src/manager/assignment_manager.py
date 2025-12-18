@@ -12,9 +12,9 @@ class AssignmentManager:
     ): 
         if assignments is None:
             assignments = {}
-        self._assignments = assignments
+        self.__assignments = assignments
 
-    def assign_device(
+    def create_assignment(
         self,
         device: Device,
         assignee: Assignee,
@@ -34,7 +34,7 @@ class AssignmentManager:
             assignee=assignee
         )
 
-        self._assignments[assignment_id] = new_assignment
+        self.__assignments[assignment_id] = new_assignment
 
         device.update_device_status(DeviceStatus.ASSIGNED)
         device.update_assigned_to(assignee.get_id())
@@ -43,28 +43,30 @@ class AssignmentManager:
 
         return new_assignment
 
-    def return_device(
+    def close_assginment(
         self,
         assignment_id: str,
         return_quality_status: DeviceQualityStatus,
         actual_return_date: datetime | None = None,
         return_date_today: bool = True,
+        broken_status: bool = False,
     ):
-        assignment = self._assignments.get(assignment_id)
+        assignment = self.__assignments.get(assignment_id)
         if not assignment:
             raise ValueError(f"Assignment with ID {assignment_id} does not exist.")
 
-        assignment.close_assignment(
+        assignment.return_device(
             return_quality_status=return_quality_status,
             actual_return_date=actual_return_date,
             return_date_today=return_date_today,
+            broken_status=broken_status,
         )
 
     def get_overdue_assignments(self) -> list[Assignment]:
         current_date = datetime.now()
         overdue_assignments = []
 
-        for assignment in self._assignments.values():
+        for assignment in self.__assignments.values():
             expected_return_date = assignment.get_expected_return_date()
             status = assignment.get_status()
 
@@ -73,14 +75,32 @@ class AssignmentManager:
 
         return overdue_assignments
     
+    def get_active_assignments(self) -> list[Assignment]:
+        return [
+            assignment for assignment in self.__assignments.values()
+            if assignment.get_status() == AssignmentStatus.OPEN
+        ]
+    
 
     def find_assignment_by_device_id(self, device_id: str) -> Assignment | None:
-        for assignment in self._assignments.values():
+        for assignment in self.__assignments.values():
             device = assignment.get_device()
 
             if device.get_id() == device_id:
                 return assignment
         return None
+    
+    def search_assignment_by_device_id(self, device_id: str, open: bool) -> list[Assignment]:
+        if open:
+            return [
+                assignment for assignment in self.__assignments.values()
+                if assignment.get_device().get_id() == device_id and assignment.get_status() == AssignmentStatus.OPEN
+            ]
+        else:
+            return [
+                assignment for assignment in self.__assignments.values()
+                if assignment.get_device().get_id() == device_id
+            ]
 
 
 

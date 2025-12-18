@@ -42,6 +42,9 @@ class Assignment:
     def get_device(self) -> Device:
         return self._device
     
+    def get_notes(self) -> str:
+        return self._notes
+    
     def to_dict(self) -> dict:
         device_id = self._device.get_id()
         assignee_id = self._assignee.get_id()
@@ -59,7 +62,7 @@ class Assignment:
             "status": self.__status.value,
         }
     
-    def close_assignment(
+    def return_device(
         self,
         return_quality_status: DeviceQualityStatus,
         actual_return_date: datetime | None = None,
@@ -87,7 +90,11 @@ class Assignment:
             self._device.update_device_status(DeviceStatus.AVAILABLE)
 
         self._device.update_quality_status(return_quality_status)
-        self._device.update_device_assignee(None)
+        self._device.update_assigned_to(None)
+
+        # Remove device from assignee's list
+        self._assignee.unassign_device(self._device.get_id())
+
 
         # Update notes
         self._notes += f"[Đóng] Vào ngày {self.__actual_return_date.isoformat() if self.__actual_return_date else 'N/A'}, thiết bị {self._device.get_id()} đã được trả về với tình trạng chất lượng: {self.__return_quality_status}."

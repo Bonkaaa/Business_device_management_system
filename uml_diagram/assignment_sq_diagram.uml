@@ -1,0 +1,39 @@
+@startuml
+title Quy trình Giao Thiết Bị
+actor "Admin" as User
+participant "Inventory" as Inv
+participant "Device" as Dev
+participant "Assignee" as Asg
+participant "Assignment" as Ass
+
+User -> Inv: search_available_devices(category)
+activate Inv
+Inv -> Inv: filter_status(status="AVAILABLE")
+Inv -> Inv: filter_quality(status="GOOD")
+Inv --> User: List<Device>
+deactivate Inv
+
+note right of User: Admin chọn thiết bị và người nhận
+
+User -> Ass: **create_assignment(device, assignee, expected_return_date)**
+activate Ass
+note right: Hệ thống tạo record\nvà set ngày bắt đầu
+
+    Ass -> Dev: assign_to(assignee_id)
+    note right: Cập nhật trạng thái\nthiết bị sang "Assigned"
+    activate Dev
+    Dev --> Ass: Cập nhật xong trạng thái
+
+    deactivate Dev
+
+    
+
+    Ass -> Asg: assign_device(device_id)
+    activate Asg
+    Asg --> Ass: Đã thêm thiết bị
+
+    deactivate Asg
+
+Ass --> User: Tạo Assignment thành công
+deactivate Ass
+@enduml

@@ -1,0 +1,61 @@
+@startuml
+title Quy trình Bảo Trì Thiết Bị
+actor "Nhân viên" as Emp
+actor "Admin" as Admin
+participant "MaintenanceTicket" as Ticket
+participant "Device" as Dev
+actor "Kỹ thuật viên" as Tech
+participant "Assignment" as Ass
+
+Emp -> Admin: report_issue(deviceId, description)
+note right of Emp: Có thể là thiết bị cá nhân\nhoặc thiết bị phòng ban
+Admin -> Ticket: **create_ticket(deviceId, description, reportedBy)**
+activate Ticket
+
+    Ticket -> Dev: update_status("MAINTENANCE")
+    activate Dev
+    Ticket -> Dev: update_quality_status("BROKEN")
+    Dev --> Ticket: Cập nhật xong trạng thái thiết bị
+    deactivate Dev
+
+Ticket --> Emp: Tạo Ticket Thành Công
+deactivate Ticket
+
+... Thời gian trôi qua ...
+
+Tech -> Ticket: inspect_device(ticketId)
+activate Ticket
+Tech -> Ticket: update_status("IN_PROGRESS")
+Ticket --> Tech: Đã nhận yêu cầu
+deactivate Ticket
+
+Tech -> Ticket: resolve_ticket(ticketId, tech_notes, cost)
+
+Ticket -> Ticket: update_status("RESOLVED")
+
+activate Ticket
+    
+    alt Sửa thành công (GOOD)
+        Ticket -> Dev: update_status("ASSIGNED")
+        activate Dev
+        Ticket -> Dev: update_quality_status("GOOD")
+        Dev --> Ticket: Sửa xong
+        deactivate Dev
+    else Không sửa được (BROKEN)
+        Ticket -> Dev: update_quality_status("RETIRED")
+        activate Dev
+        Ticket -> Dev: update_device_status("OUT_OF_SERVICE")
+        Dev --> Ticket: Cập nhật xong trạng thái thiết bị
+        deactivate Dev
+        Tech -> Ass: close_assignment(assignment_id)
+        activate Ass
+        Ass --> Tech: Đã đóng Assignment
+        deactivate Ass
+        
+
+    end
+
+Ticket -> Ticket: update_status("CLOSED")
+Ticket --> Tech: Hoàn thành
+deactivate Ticket
+@enduml

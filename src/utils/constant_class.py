@@ -19,8 +19,10 @@ class AssignmentStatus(Enum):
     OVERDUE = "overdue"
 
 class MaintenanceStatus(Enum):
+    REPORTED = "reported"
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
+    CLOSED = "CLOSED"
 
         
         

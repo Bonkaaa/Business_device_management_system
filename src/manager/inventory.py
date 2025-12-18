@@ -6,7 +6,7 @@ from utils.constant_class import DeviceStatus, DeviceQualityStatus
 
 class Inventory:
     def __init__(self):
-        self.devices = {}
+        self.__devices = {}
 
     def add_device(
         self,
@@ -24,32 +24,39 @@ class Inventory:
             assigned_to=None,
             specifications=specifications,
         )
-        self.devices[device_id] = new_device
+        self.__devices[device_id] = new_device
+
         return new_device
     
     def remove_device(self, device_id: str) -> None:
-        if device_id in self.devices:
-            del self.devices[device_id]
+        if device_id in self.__devices:
+            del self.__devices[device_id]
         else:
             raise ValueError(f"Thiết bị với ID {device_id} không tồn tại trong kho.")
         
     def get_all_available_devices(self) -> list[Device]:
-        return [device for device in self.devices.values() if device.is_available()]
+        return [device for device in self.__devices.values() if device.is_available()]
+    
+    def get_device_by_id(self, device_id: str) -> Device | None:
+        return self.__devices.get(device_id)
+    
+    def search_device_by_category(self, category: str) -> list[Device]:
+        return [
+            device for device in self.__devices.values() if device.category == category
+        ]
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            device_id: device.to_dict() for device_id, device in self.devices.items()
+            device_id: device.to_dict() for device_id, device in self.__devices.items()
         }
     
-    def check_available_device(self, device_id: str) -> bool:
-        device = self.devices.get(device_id)
-        if device:
-            return device.is_available()
-        else:
-            raise ValueError(f"Thiết bị với ID {device_id} không tồn tại trong kho.")
+    def filter_devices_by_device_status(self, status: DeviceStatus) -> list[Device]:
+        return [
+            device for device in self.__devices.values() if device.get_status()["status"] == status
+        ]
         
     def check_device_quality_status(self, device_id: str) -> Bool:
-        device = self.devices.get(device_id)
+        device = self.__devices.get(device_id)
         if device:
             quality_status = device.get_quality_status()
             if quality_status == DeviceQualityStatus.GOOD:

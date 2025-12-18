@@ -14,7 +14,7 @@ class MaintenanceManager:
     ):
         if tickets is None:
             tickets = {}
-        self._tickets = tickets
+        self.__tickets = tickets
 
     def create_ticket(
         self,
@@ -28,13 +28,13 @@ class MaintenanceManager:
         new_ticket = MaintenanceTicket(
             ticket_id=ticket_id,
             issue_description=issue_description,
-            status=MaintenanceStatus.IN_PROGRESS,
+            status=MaintenanceStatus.REPORTED,
             reported_date=reported_date,
             device=device,
             reporter=reporter
         )
 
-        self._tickets[ticket_id] = new_ticket
+        self.__tickets[ticket_id] = new_ticket
 
         # Update device status and quality status
         device.update_device_status(DeviceStatus.MAINTENANCE)
@@ -48,7 +48,7 @@ class MaintenanceManager:
         technician_notes: str | None = None,
         costs: float | None = None
     ):
-        ticket = self._tickets.get(ticket_id)
+        ticket = self.__tickets.get(ticket_id)
         if not ticket:
             raise ValueError(f"Phiếu bảo trì với ID {ticket_id} không tồn tại.")
 
@@ -62,9 +62,9 @@ class MaintenanceManager:
         ticket_id: str,
         is_repaired: bool,
     ):
-        ticket = self._tickets.get(ticket_id)
+        ticket = self.__tickets.get(ticket_id)
 
-        device = ticket.device
+        device = ticket.get_device()
 
         if is_repaired:
             device.update_device_status(DeviceStatus.ASSIGNED)
@@ -83,6 +83,25 @@ class MaintenanceManager:
             else:
                 device.update_device_status(DeviceStatus.OUT_OF_SERVICE)
                 device.update_quality_status(DeviceQualityStatus.BROKEN)
+
+        ticket.update_status(MaintenanceStatus.CLOSED)
+
+
+    # def search_tickets_by_device_id(
+    #     self,
+    #     device_id: str,
+    #     status_filter: MaintenanceStatus | None = None
+    # ) -> list[MaintenanceTicket]:
+    #     results = []
+    #     for ticket in self.__tickets.values():
+    #         if ticket.device.get_id() == device_id:
+    #             if status_filter and ticket.get_status() == status_filter:
+    #                 results.append(ticket)
+    #     return results
+
+    def search_ticket_by_id(self, ticket_id: str) -> MaintenanceTicket | None:
+        return self.__tickets.get(ticket_id)
+        
 
 
 

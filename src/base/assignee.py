@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from entities import Device
 
 class Assignee(ABC):
     def __init__(
@@ -8,7 +9,7 @@ class Assignee(ABC):
     ):
         self._id = assignee_id
         self.name = name
-        self._assigned_devices = []
+        self.__assigned_devices = [] 
 
     def get_id(self) -> str:
         return self._id
@@ -17,7 +18,7 @@ class Assignee(ABC):
         return self.name
     
     def get_assigned_devices(self) -> list:
-        return self._assigned_devices
+        return self.__assigned_devices
     
     @abstractmethod
     def get_contact_info(self) -> str:
@@ -32,9 +33,9 @@ class Assignee(ABC):
         pass
 
     @abstractmethod
-    def assign_device(self, device_id: str) -> None:
+    def assign_device(self, device: Device) -> None:
         pass
 
     @abstractmethod
-    def unassign_device(self, device_id: str) -> None:
+    def unassign_device(self, device: Device) -> None:
         pass

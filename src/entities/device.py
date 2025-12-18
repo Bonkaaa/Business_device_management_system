@@ -29,15 +29,24 @@ class Device:
         # Public attributes
         self.name = name
 
-        self.category = self._validate_or_add_category(category)
+        self.category = self.__validate_or_add_category(category)
     
-    def get_spec(self):
+    def get_spec(self) -> Dict[str, Any]:
         return self._specifications
     
-    def get_id(self):
+    def get_id(self) -> str:
         return self._device_id
     
-    def _validate_or_add_category(self, category: str):
+    def get_category(self) -> str:
+        return self.category
+    
+    def get_quality_status(self) -> DeviceQualityStatus:
+        return self.__device_quality_status
+    
+    def get_specifications(self) -> Dict[str, Any]:
+        return self.__specifications
+    
+    def __validate_or_add_category(self, category: str) -> str:
         if category is None:
             raise ValueError("Danh mục thiết bị không được để trống.")
         
@@ -48,7 +57,7 @@ class Device:
 
         return category
 
-    def get_status(self):
+    def get_status(self) -> Dict[str, Any]:
         return {
             "status": self.__status,
             "assigned_to": self.__assigned_to,
@@ -67,9 +76,6 @@ class Device:
             "assigned_to": self.__assigned_to,
             "specifications": self.__specifications,
         }
-    
-    def get_quality_status(self) -> DeviceQualityStatus:
-        return self.__device_quality_status
 
     def update_device_status(
         self,
@@ -79,7 +85,7 @@ class Device:
     
     def update_assigned_to(
         self,
-        assigned_to: Optional[str],
+        assigned_to: Assignee,
     ):
         self.__assigned_to = assigned_to
 
@@ -88,6 +94,7 @@ class Device:
         new_quality_status: DeviceQualityStatus,
     ):
         self.__device_quality_status = new_quality_status
+
     
     
 
