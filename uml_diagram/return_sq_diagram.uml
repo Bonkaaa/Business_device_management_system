@@ -1,0 +1,43 @@
+@startuml
+title Quy trình Thu hồi thiết bị
+actor "Admin" as Admin
+participant "Assignment" as Ass
+participant "Device" as Dev
+participant "Assignee" as Asg
+
+Admin -> Ass: search_assignment_by_device_id(device_id)
+activate Ass
+Ass --> Admin: <Device>
+deactivate Ass
+
+Admin -> Ass: close_assignment(assignment_id, quality_status)
+activate Ass
+note right: Nhập tình trạng GOOD/BROKEN/LOST 
+ 
+    Ass -> Ass: set_return_date(now)
+
+    alt broken_status == True
+        Ass -> Dev: update_device_status("OUT_OF_SERVICE")
+        activate Dev
+        deactivate Dev
+    else broken_status == False
+        Ass -> Dev: update_device_status("AVAILABLE")
+        activate Dev
+        deactivate Dev
+    end
+
+    Ass -> Dev: update_quality_status(quality_status)
+    activate Dev
+    Ass -> Dev: update_assigned_to(None)
+    Dev --> Ass: Cập nhật trạng thái thành công
+    deactivate Dev
+
+    Ass -> Asg: unassign_device(device_id)
+    activate Asg
+    Asg --> Ass: Đã xoá thiết bị khỏi Assignee
+    deactivate Asg
+
+
+Ass --> Admin: Hoàn thành quy trình thu hồi thiết bị
+deactivate Ass
+@enduml

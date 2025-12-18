@@ -21,6 +21,12 @@ class IDGenerators:
         return f"EMP-{char}{digits}"
     
     @staticmethod
+    def generate_department_id():
+        char = random.choices(string.ascii_uppercase)
+        digits = ''.join(random.choices(string.digits, k=3))
+        return f"DEP-{char}{digits}"
+    
+    @staticmethod
     def generate_ticket_id():
         date_str = time.strftime("%Y%m%d")
 

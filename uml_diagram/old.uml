@@ -1,0 +1,215 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+' =================================================
+' 1. ENUMS
+' =================================================
+enum DeviceStatus {
+    AVAILABLE
+    ASSIGNED
+    MAINTENANCE
+    OUT_OF_SERVICE
+}
+
+enum DeviceCategory {
+    LAPTOP
+    DESKTOP
+    PRINTER
+}
+enum DeviceQualityStatus {
+    GOOD
+    BROKEN
+    RETIRED
+}
+enum AssignmentStatus {
+    OPEN
+    CLOSED
+    OVERDUE
+}
+
+enum MaintenanceStatus {
+    REPORTED
+    IN_PROGRESS
+    RESOLVED
+    CLOSED
+}
+
+' =================================================
+' 2. ASSIGNEE (ABSTRACTION & POLYMORPHISM)
+' =================================================
+abstract class Assignee {
+    # id: String
+    + name: String
+    - assigned_devices: List<Device>
+
+    + Assignee(id: String, name: String)
+    + {abstract} get_contact_info(): String
+    + {abstract} get_assignee_type(): String
+    + {abstract} assign_device(Device)
+    + {abstract} unassign_device(Device)
+}
+
+class Employee extends Assignee {
+    + email: String
+    + phone_number: String
+    # position: String
+    # department: Department
+
+    + assign_device(Device): Bool
+    + unassign_device(Device): Bool
+    + getContactInfo(): String
+    + get_assignee_type(): String
+    + report_issue_for_personal_device(): String
+    + report_issue_for_department_device(): String
+}
+
+class Department extends Assignee {
+    # location: String
+    # managerName: String
+    - employees: List<Employee>
+
+    + get_contact_info(): String
+    + get_assignee_type(): String
+    + assign_device(Device): Bool
+    + unassign_device(Device): Bool
+    + add_employee(Employee): void
+    + remove_employee(Employee): void
+}
+
+class Technician extends Employee {
+    - role: String
+
+    + inspect_device(MaintenanceManager, ticket_id): Dict
+    + write_technical_notes(ticket_id, notes): void
+}
+
+' =================================================
+' 3. CORE ENTITY: DEVICE
+' =================================================
+class Device {
+    # deviceId: String
+    + name: String
+    + category: String
+    - status: DeviceStatus
+    - purchaseDate: Date
+    - specifications: Dict
+    - device_quality_status: DeviceQualityStatus
+    - assigned_to: Assignee
+
+    - validate_or_add_category(category): String
+    + get_status(): Dict
+    + is_available(): Bool
+    + update_status(DeviceStatus): void
+    + update_quality_status(DeviceQualityStatus): void
+    + update_assigned_to(Assignee): void
+}
+
+' =================================================
+' 4. AGGREGATE ROOTS (MANAGERS / SERVICES)
+' =================================================
+
+class Inventory {
+    - devices: List<Device>
+
+    + add_device(name, category, specifications): Device
+    + remove_device(deviceId: String): void
+    + get_all_available_devices(): List<Device>
+    + get_device_by_id(deviceId): Device
+    + search_devices_by_category(category): List<Device>
+    + filter_devices_by_status(status): List<Device>
+    + check_device_quality_status(deviceId): Bool
+}
+
+class AssignmentManager {
+    - assignments: List<Assignment>
+
+    + create_assignment(Device, Assignee): Assignment
+    + close_assignment(assignmentId): void
+    + get_overdue_assignments(): List<Assignment>
+    + get_active_assignments(): List<Assignment>
+}
+
+class MaintenanceManager {
+    - tickets: List<MaintenanceTicket>
+
+    + createTicket(Device, Employee, issue_description): MaintenanceTicket
+    + resolve_ticket(ticketId, tech_notes, cost): void
+    + close_ticket(ticketId): void
+    + search_tickets_by_id(ticketId): MaintenanceTicket
+}
+
+class HRManager {
+    - employees: List<Employee>
+    - departments: List<Department>
+
+    + add_employee(name, email, phone_number, position, department): Employee
+    + remove_employee(employeeId): void
+    + transfer_employee(employeeId, new_department): Bool
+    + add_department(name, location, managerName): Department
+    + remove_department(departmentId): void
+    + get_total_employees(): int
+    + get_total_departments(): int
+}
+
+' =================================================
+' 5. TRANSACTION ENTITIES
+' =================================================
+class Assignment {
+    # assignmentId: String
+    # device: Device
+    # assignee: Assignee
+    # notes: String
+    - status: AssignmentStatus
+    - initial_date: Date
+    - expected_return_date: Date
+    - quality_status: DeviceQualityStatus
+
+    + return_device(DeviceQualityStatus): void
+}
+
+class MaintenanceTicket {
+    # ticketId: String
+    # device: Device
+    # reporter: Employee
+    # issue_description: String
+    # status: MaintenanceStatus
+    # reported_date: Date
+    - date_resolved: Date
+    - technician_notes: String
+
+    + update_status(MaintenanceStatus): void
+    + resolve_ticket(tech_notes, cost): void
+}
+
+' =================================================
+' 6. RELATIONSHIPS
+' =================================================
+
+' Inventory relationships
+Inventory "1" o-- "*" Device : Quản lý 
+
+' Manager relationships
+AssignmentManager "1" *-- "*" Assignment : Quản lý
+MaintenanceManager "1" *-- "*" MaintenanceTicket : Quản lý
+HRManager "1" o-- "*" Employee : Quản lý
+HRManager "1" o-- "*" Department : Quản lý
+
+' Assignment relationships
+Assignment "*" --> "1" Device
+Assignment "*" --> "1" Assignee
+
+' MaintenanceTicket relationships
+MaintenanceTicket "*" --> "1" Device
+MaintenanceTicket "*" --> "1" Employee : Báo cáo bởi
+
+' Department-Employee relationships
+Department "1" o-- "*" Employee : Bao gồm
+Employee "*" --> "1" Department : Thuộc về
+
+' Inheritance relationships
+' Employee extends Assignee
+' Department extends Assignee
+' Technician extends Employee
+
+@enduml

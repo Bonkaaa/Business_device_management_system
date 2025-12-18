@@ -1,68 +1,80 @@
-class Department: 
+from base.assignee import Assignee
+from employee import Employee
+from device import Device
+from typing import Bool
+
+class Department(Assignee):
     def __init__(
-        self,
+        self, 
+        name: str, 
         department_id: str,
-        name: str,
-        manager_id: str | None,
+        manager: Employee,
         location: str
     ):
-        self.department_id = department_id
-        self.name = name
-        self.manager_id = manager_id
-        self.location = location
+        super().__init__(name, department_id)
 
-        self.employee_ids = []
-        
-        self.device_ids = []
+        # Protected attributes
+        self._location = location
+        self._manager = manager
 
-    def add_employee(self, employee_id: str):
-        if employee_id not in self.employee_ids:
-            self.employee_ids.append(employee_id)
+        # Private attributes
+        self.__employees = []
+
+    def get_employees(self) -> list:
+        return self.__employees
+    
+    def add_employee(self, employee: Employee) -> Bool:
+        """Add employee to the department"""
+        if employee not in self.__employees:
+            self.__employees.append(employee)
             return True
         return False
     
-    def remove_employee(self, employee_id: str):
-        if employee_id in self.employee_ids:
-            self.employee_ids.remove(employee_id)
-            if employee_id == self.manager_id:
-                self.manager_id = None
+    def remove_employee(self, employee: Employee) -> Bool:
+        """Remove employee from the department"""
+        if employee in self.__employees:
+            self.__employees.remove(employee)
             return True
         return False
     
-    def assign_shared_device(self, device_id: str):
-        if device_id not in self.device_ids:
-            self.device_ids.append(device_id)
+    def get_name(self) -> str:
+        return self.name
+
+    def assign_device(self, device: Device) -> Bool:
+        device_id = device.get_id()
+        if device_id not in self.__assigned_devices:
+            self.__assigned_devices.append(device_id)
             return True
         return False
     
-    def remove_shared_device(self, device_id: str):
-        if device_id in self.device_ids:
-            self.device_ids.remove(device_id)
+    def unassign_device(self, device: Device) -> Bool:
+        device_id = device.get_id()
+        if device_id in self.__assigned_devices:
+            self.__assigned_devices.remove(device_id)
             return True
         return False
     
-    def __str__(self):
-        manager_str = f"(Manager: {self.manager_id})" if self.manager_id else ""
-        return f"[{self.dept_id}] {self.name} - {self.location} | {len(self.employee_ids)} NV | {len(self.device_ids)} TB {manager_str}"
+    def get_contact_info(self):
+        return f"Department Location: {self._location}, Manager: {self._manager.get_name()}"
+
+    def get_assignee_type(self) -> str:
+        return "Department"
     
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
-            "Department ID": self.department_id,
-            "Name": self.name,
-            "Manager ID": self.manager_id,
-            "Location": self.location,
-            "Employee IDs": self.employee_ids,
-            "Device IDs": self.device_ids
+            "department_id": self.get_id(),
+            "name": self.name,
+            "location": self._location,
+            "manager": self._manager.to_dict(),
+            "assigned_devices": self.__assigned_devices,
+            "employees": [emp.get_name() for emp in self.__employees],
         }
     
-    @classmethod
-    def from_dict(cls, data: dict):
-        dept = cls(
-            department_id=data.get("Department ID"),
-            name=data.get("Name"),
-            manager_id=data.get("Manager ID"),
-            location=data.get("Location")
-        )
-        dept.employee_ids = data.get("Employee IDs", [])
-        dept.device_ids = data.get("Device IDs", [])
-        return dept
+    
+
+    
+
+    
+
+        
+    

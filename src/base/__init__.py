@@ -1,3 +1,5 @@
-from .base_device import BaseDevice
+from .assignee import Assignee
 
-__all__ = ["BaseDevice"]
+__all__ = [
+    "Assignee",
+]
