@@ -1,7 +1,7 @@
 from datetime import datetime
 from utils.constant_class import DeviceStatus, DeviceQualityStatus
-from device import Device
-from base.assignee import Assignee
+from .device import Device
+from base import Assignee
 from utils.constant_class import AssignmentStatus
 
 class Assignment:

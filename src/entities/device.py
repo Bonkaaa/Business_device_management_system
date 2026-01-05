@@ -12,7 +12,7 @@ class Device:
         name: str, 
         category: str, 
         status: DeviceStatus,
-        purchase_date: datetime,
+        purchase_date: str,
         assigned_to: Assignee | None,
         specifications: Dict[str, Any],
     ):
@@ -29,10 +29,14 @@ class Device:
         # Public attributes
         self.name = name
 
+        # Convert date string to date object
+        self.__purchase_date = datetime.strptime(purchase_date, "%Y-%m-%d").date()
+
+
         self.category = self.__validate_or_add_category(category)
     
     def get_spec(self) -> Dict[str, Any]:
-        return self._specifications
+        return self.__specifications
     
     def get_id(self) -> str:
         return self._device_id
@@ -45,6 +49,9 @@ class Device:
     
     def get_specifications(self) -> Dict[str, Any]:
         return self.__specifications
+    
+    def get_purchase_date(self) -> str:
+        return self.__purchase_date.isoformat()
     
     def __validate_or_add_category(self, category: str) -> str:
         if category is None:

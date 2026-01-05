@@ -1,14 +1,13 @@
-from base.assignee import Assignee
-from employee import Employee
-from device import Device
-from typing import Bool
+from base import Assignee
+from .employee import Employee
+from .device import Device
 
 class Department(Assignee):
     def __init__(
         self, 
         name: str, 
         department_id: str,
-        manager: Employee,
+        manager: Employee | None,
         location: str
     ):
         super().__init__(name, department_id)
@@ -23,14 +22,14 @@ class Department(Assignee):
     def get_employees(self) -> list:
         return self.__employees
     
-    def add_employee(self, employee: Employee) -> Bool:
+    def add_employee(self, employee: Employee) -> bool:
         """Add employee to the department"""
         if employee not in self.__employees:
             self.__employees.append(employee)
             return True
         return False
     
-    def remove_employee(self, employee: Employee) -> Bool:
+    def remove_employee(self, employee: Employee) -> bool:
         """Remove employee from the department"""
         if employee in self.__employees:
             self.__employees.remove(employee)
@@ -39,15 +38,21 @@ class Department(Assignee):
     
     def get_name(self) -> str:
         return self.name
+    
+    def get_location(self) -> str:
+        return self._location
+    
+    def get_manager(self) -> Employee | None:
+        return self._manager
 
-    def assign_device(self, device: Device) -> Bool:
+    def assign_device(self, device: Device) -> bool:
         device_id = device.get_id()
         if device_id not in self.__assigned_devices:
             self.__assigned_devices.append(device_id)
             return True
         return False
     
-    def unassign_device(self, device: Device) -> Bool:
+    def unassign_device(self, device: Device) -> bool:
         device_id = device.get_id()
         if device_id in self.__assigned_devices:
             self.__assigned_devices.remove(device_id)

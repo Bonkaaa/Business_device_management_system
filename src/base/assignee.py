@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
-from entities import Device
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from entities import Device
 
 class Assignee(ABC):
     def __init__(
@@ -33,9 +36,9 @@ class Assignee(ABC):
         pass
 
     @abstractmethod
-    def assign_device(self, device: Device) -> None:
+    def assign_device(self, device: "Device") -> None:
         pass
 
     @abstractmethod
-    def unassign_device(self, device: Device) -> None:
+    def unassign_device(self, device: "Device") -> None:
         pass

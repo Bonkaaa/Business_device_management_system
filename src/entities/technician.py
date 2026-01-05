@@ -1,8 +1,8 @@
-from employee import Employee
+from .employee import Employee
 from typing import Dict
 from manager import MaintenanceManager
 from utils.constant_class import MaintenanceStatus
-from department import Department
+from .department import Department
 
 class Technician(Employee):
     def __init__(

@@ -3,26 +3,26 @@ from typing import Dict
 from utils.utils import save_to_json, load_from_json
 
 class DeviceStatus(Enum):
-    AVAILABLE = "available"
-    ASSIGNED = "assigned"
-    MAINTENANCE = "maintenance"
-    OUT_OF_SERVICE = "out_of_service"
+    AVAILABLE = "Đang có sẵn"
+    ASSIGNED = "Đã được giao"
+    MAINTENANCE = "Đang bảo trì"
+    OUT_OF_SERVICE = "Ngừng hoạt động"
 
 class DeviceQualityStatus(Enum):
-    GOOD = "good"
-    BROKEN = "broken"
-    RETIRED = "retired"
+    GOOD = "Tốt"
+    BROKEN = "Hỏng"
+    RETIRED = "Đã ngừng sử dụng"
 
 class AssignmentStatus(Enum):
-    OPEN = "open"
-    CLOSED = "closed"
-    OVERDUE = "overdue"
+    OPEN = "Mở"
+    CLOSED = "Đóng"
+    OVERDUE = "Quá hạn"
 
 class MaintenanceStatus(Enum):
-    REPORTED = "reported"
-    IN_PROGRESS = "in_progress"
-    RESOLVED = "resolved"
-    CLOSED = "CLOSED"
+    REPORTED = "Đã báo cáo"
+    IN_PROGRESS = "Đang tiến hành"
+    RESOLVED = "Đã giải quyết"
+    CLOSED = "Đóng"
 
         
         

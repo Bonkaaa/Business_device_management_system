@@ -1,7 +1,9 @@
-from base.assignee import Assignee
-from device import Device
-from typing import Bool
-from .department import Department
+from base import Assignee
+from .device import Device
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from .department import Department
 
 class Employee(Assignee):
     def __init__(
@@ -11,7 +13,7 @@ class Employee(Assignee):
         email: str,
         phone_number: str,
         position: str,
-        department: Department
+        department: Optional["Department"] = None
     ):
         super().__init__(name, employee_id)
 
@@ -24,7 +26,7 @@ class Employee(Assignee):
         self._department = department
 
 
-    def assign_device(self, device: Device) -> Bool:
+    def assign_device(self, device: Device) -> bool:
         device_id = device.get_id()
         if device_id not in self.__assigned_devices:
             self.__assigned_devices.append(device_id)
@@ -32,7 +34,7 @@ class Employee(Assignee):
         return False
 
 
-    def unassign_device(self, device: Device) -> Bool:
+    def unassign_device(self, device: Device) -> bool:
         device_id = device.get_id()
         if device_id in self.__assigned_devices:
             self.__assigned_devices.remove(device_id)
@@ -45,8 +47,11 @@ class Employee(Assignee):
     def get_assignee_type(self) -> str:
         return "Employee"
     
-    def get_department(self) -> Department:
+    def get_department(self) -> "Department":
         return self._department
+    
+    def get_position(self) -> str:
+        return self._position
     
     def to_dict(self) -> dict:
         return {

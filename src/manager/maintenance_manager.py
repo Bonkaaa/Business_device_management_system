@@ -1,106 +1,243 @@
 from entities import MaintenanceTicket
 from utils.constant_class import MaintenanceStatus
-from utils.utils import load_json_data, save_json_data
 from entities import Device, Employee
-from utils.id_generators import generate_maintenance_ticket_id
-from utils.constant_class import DeviceStatus, DeviceQualityStatus
+from utils.id_generators import generate_ticket_id as generate_maintenance_ticket_id
+from utils.constant_class import DeviceStatus, DeviceQualityStatus, AssignmentStatus
 from datetime import datetime
-
+from database import DatabaseManager
+from .inventory import Inventory
+from .hr_manager import HRManager
 
 class MaintenanceManager:
-    def __init__(
-        self,
-        tickets: dict[str, MaintenanceTicket] = None,
-    ):
-        if tickets is None:
-            tickets = {}
-        self.__tickets = tickets
+    def __init__(self, inventory_manager: Inventory, hr_manager: HRManager, db_path: str):
+        self.db_manager = DatabaseManager(db_path)
+        self.inventory_manager = inventory_manager
+        self.hr_manager = hr_manager
 
     def create_ticket(
         self,
         issue_description: str,
         device: Device,
-        reporter: Employee,
+        reporter: Employee
     ) -> MaintenanceTicket:
         ticket_id = generate_maintenance_ticket_id()
         reported_date = datetime.now()
 
-        new_ticket = MaintenanceTicket(
-            ticket_id=ticket_id,
-            issue_description=issue_description,
-            status=MaintenanceStatus.REPORTED,
-            reported_date=reported_date,
-            device=device,
-            reporter=reporter
-        )
+        # Query to insert new maintenance ticket
+        query_ticket = """
+            INSERT INTO maintenance_tickets (ticket_id, device_id, reporter_id, issue_description, status, reported_date, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
 
-        self.__tickets[ticket_id] = new_ticket
+        query_device = """
+            UPDATE devices
+            SET status = ?, quality_status = ?
+            WHERE device_id = ?
+        """
 
-        # Update device status and quality status
-        device.update_device_status(DeviceStatus.MAINTENANCE)
-        device.update_quality_status(DeviceQualityStatus.BROKEN)
+        try:
+            conn = self.db_manager.get_connection()
+            cursor = conn.cursor()
 
-        return new_ticket
-    
+            device_id = device.get_id()
+            reporter_id = reporter.get_id()
+
+            technician_notes = f"[Khởi tạo] Vào ngày {reported_date.isoformat()}, phiếu bảo trì {ticket_id} đã được tạo cho thiết bị {device_id} bởi nhân viên {reporter_id} với mô tả sự cố: {issue_description}."
+
+            # Insert maintenance ticket
+            cursor.execute(query_ticket, (
+                ticket_id,
+                device_id,
+                reporter_id,
+                issue_description,
+                MaintenanceStatus.REPORTED.value,
+                reported_date,
+                technician_notes
+            ))
+
+            # Update device status and quality status
+            cursor.execute(query_device, (
+                DeviceStatus.MAINTENANCE.value,
+                DeviceQualityStatus.BROKEN.value,
+                device_id
+            ))
+
+            conn.commit()
+            conn.close()
+
+            return MaintenanceTicket(
+                ticket_id=ticket_id,
+                issue_description=issue_description,
+                status=MaintenanceStatus.REPORTED,
+                reported_date=reported_date,
+                device=device,
+                reporter=reporter
+            )
+        
+        except Exception as e:
+            print(f"Lỗi khi tạo phiếu bảo trì: {e}")
+            return None
+        
     def resolve_ticket(
         self,
         ticket_id: str,
         technician_notes: str | None = None,
         costs: float | None = None
     ):
-        ticket = self.__tickets.get(ticket_id)
-        if not ticket:
-            raise ValueError(f"Phiếu bảo trì với ID {ticket_id} không tồn tại.")
+        date_resolved = datetime.now()
 
-        ticket.resolve_ticket(
-            technician_notes=technician_notes,
-            costs=costs
-        )
+        current_ticket = self.search_ticket_by_id(ticket_id)
+
+        if not current_ticket:
+            print(f"Phiếu bảo trì với ID {ticket_id} không tồn tại.")
+            return
+        
+        updated_notes = current_ticket.to_dict().get("technician_notes", "")
+        updated_notes += f"[Giải quyết] Vào ngày {date_resolved.isoformat()}, phiếu bảo trì {ticket_id} đã được giải quyết. Tiền công: {costs if costs is not None else 'N/A'}."
+        if technician_notes:
+            updated_notes += f" Ghi chú kỹ thuật viên: {technician_notes}"
+
+        query = """
+            UPDATE maintenance_tickets
+            SET status = ?, date_resolved = ?, notes = ?, costs = ?
+            WHERE ticket_id = ?
+        """
+
+        try:
+            params = (
+                MaintenanceStatus.RESOLVED.value,
+                date_resolved.isoformat(),
+                updated_notes,
+                costs,
+                ticket_id
+            )
+            self.db_manager.execute_query(query, params)
+
+        except Exception as e:
+            print(f"Lỗi khi giải quyết phiếu bảo trì: {e}")
+
 
     def close_ticket(
         self,
         ticket_id: str,
         is_repaired: bool,
     ):
-        ticket = self.__tickets.get(ticket_id)
+        
+        ticket = self.search_ticket_by_id(ticket_id)
 
+        if not ticket:
+            print(f"Phiếu bảo trì với ID {ticket_id} không tồn tại.")
+            return
+        
         device = ticket.get_device()
 
-        if is_repaired:
-            device.update_device_status(DeviceStatus.ASSIGNED)
-            device.update_quality_status(DeviceQualityStatus.GOOD)
+        try:
+            conn = self.db_manager.get_connection()
+            cursor = conn.cursor()
 
-            ticket.update_status(MaintenanceStatus.CLOSED)
+            if is_repaired:
+                # Check if device was assigned
+                cursor.execute("""
+                    SELECT assigned_to FROM devices WHERE device_id = ?
+                """, (device.get_id(),))
+                row = cursor.fetchone()
 
-        else:
-            assignment = self.find_assignment_by_device_id(device.get_id())
-            if assignment:
-                assignment.return_device(
-                    return_quality_status=DeviceQualityStatus.BROKEN,
-                    return_date_today=True,
-                    broken_status=True
-                )
+                if row and row[0]:
+                    new_status = DeviceStatus.ASSIGNED.value
+
+                cursor.execute("""
+                    UPDATE devices
+                    SET status = ?, quality_status = ?
+                    WHERE device_id = ?
+                """, (
+                    DeviceStatus.ASSIGNED.value,
+                    DeviceQualityStatus.GOOD.value,
+                    device.get_id()
+                ))
+
             else:
-                device.update_device_status(DeviceStatus.OUT_OF_SERVICE)
-                device.update_quality_status(DeviceQualityStatus.BROKEN)
+                # Update device
+                cursor.execute("""
+                    UPDATE devices
+                    SET status = ?, quality_status = ?, assigned_to = NULL
+                    WHERE device_id = ?
+                """, (
+                    DeviceStatus.OUT_OF_SERVICE.value,
+                    DeviceQualityStatus.RETIRED.value,
+                    device.get_id()
+                ))
 
-        ticket.update_status(MaintenanceStatus.CLOSED)
+                # Update assignment if exists
+                cursor.execute("""
+                    UPDATE assignments
+                    SET status = ?, return_date = ?, return_quality_status = ?, notes = notes || ?
+                    WHERE device_id = ? AND status = ?
+                """, (
+                    AssignmentStatus.CLOSED.value,
+                    datetime.now().isoformat(),
+                    DeviceQualityStatus.BROKEN.value,
+                    f"[Đóng] Vào ngày {datetime.now().isoformat()}, thiết bị {device.get_id()} đã được trả về với tình trạng chất lượng: {DeviceQualityStatus.BROKEN.value}.",
+                    device.get_id(),
+                    AssignmentStatus.OPEN.value
+                ))
+            
+            # Update maintenance ticket status
+            cursor.execute("""
+                UPDATE maintenance_tickets
+                SET status = ?
+                WHERE ticket_id = ?
+            """, (
+                MaintenanceStatus.CLOSED.value,
+                ticket_id
+            ))
 
-
-    # def search_tickets_by_device_id(
-    #     self,
-    #     device_id: str,
-    #     status_filter: MaintenanceStatus | None = None
-    # ) -> list[MaintenanceTicket]:
-    #     results = []
-    #     for ticket in self.__tickets.values():
-    #         if ticket.device.get_id() == device_id:
-    #             if status_filter and ticket.get_status() == status_filter:
-    #                 results.append(ticket)
-    #     return results
+            conn.commit()
+            conn.close()
+            print(f"Đóng phiếu bảo trì {ticket_id} thành công.")
+        except Exception as e:
+            print(f"Lỗi khi đóng phiếu bảo trì: {e}")
 
     def search_ticket_by_id(self, ticket_id: str) -> MaintenanceTicket | None:
-        return self.__tickets.get(ticket_id)
+        query = "SELECT * FROM maintenance_tickets WHERE ticket_id = ?"
+        params = (ticket_id,)
+        row = self.db_manager.fetch_one(query, params)
+        if row:
+            return self._row_to_ticket(row)
+        return None
+    
+    def get_all_tickets(self) -> list[MaintenanceTicket]:
+        query = "SELECT * FROM maintenance_tickets"
+        rows = self.db_manager.fetch_all(query)
+        tickets = []
+        for row in rows:
+            ticket = self._row_to_ticket(row)
+            tickets.append(ticket)
+        return tickets
+
+    def _row_to_ticket(self, row) -> MaintenanceTicket:
+        device = self.inventory_manager.search_device_by_id(row['device_id'])
+        reporter = self.hr_manager.get_employee_by_id(row['reporter_id'])
+
+        reported_date = datetime.fromisoformat(row['reported_date'])
+
+        return MaintenanceTicket(
+            ticket_id=row['ticket_id'],
+            issue_description=row['issue_description'],
+            status=MaintenanceStatus(row['status']),
+            reported_date=reported_date,
+            date_resolved=row['date_resolved'],
+            technician_notes=row['notes'],
+            costs=row['costs'],
+            device=device,
+            reporter=reporter
+        )
+
+
+
+
+
+        
+        
         
 
 
