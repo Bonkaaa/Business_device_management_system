@@ -47,6 +47,7 @@ class DatabaseManager:
             );
         """
 
+        # Chú ý assignee_id có thể là employee_id hoặc department_id tùy theo việc thiết bị được giao cho ai
         query_asssignments = """
             CREATE TABLE IF NOT EXISTS assignments (
                 assignment_id TEXT PRIMARY KEY,
@@ -60,7 +61,9 @@ class DatabaseManager:
                 device_name TEXT,
                 assignee_id TEXT,
                 assignee_name TEXT,
-                FOREIGN KEY(device_id) REFERENCES devices(device_id)
+                FOREIGN KEY(device_id) REFERENCES devices(device_id),
+                FOREIGN KEY(assignee_id) REFERENCES employees(employee_id),
+                FOREIGN KEY(assignee_id) REFERENCES departments(department_id)
             );
         """
 

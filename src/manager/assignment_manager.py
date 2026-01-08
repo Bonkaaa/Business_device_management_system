@@ -18,17 +18,21 @@ class AssignmentManager:
         self,
         device: Device,
         assignee: Assignee,
-        expected_return_date: str | None,
+        expected_return_date: datetime | None,
         quality_status: DeviceQualityStatus | None
     ):
         assignment_id = generate_assignment_id()
         initial_date = datetime.now()
+        initial_date_str = initial_date.isoformat()
 
         if quality_status is not None:
             quality_status_value = quality_status.value
+        else:
+            quality_status_value = ""
 
         device_id = device.get_id()
         assignee_id = assignee.get_id()
+        expected_return_date_str = expected_return_date.isoformat() if expected_return_date else None
 
         query_insert = """
             INSERT INTO assignments (
@@ -49,11 +53,11 @@ class AssignmentManager:
             # Insert new assignment
             cursor.execute(query_insert, (
                 assignment_id,
-                initial_date,
-                expected_return_date,
-                None,
+                initial_date_str,
+                expected_return_date_str,
+                "",
                 AssignmentStatus.OPEN.value,
-                quality_status_value if quality_status is not None else None,
+                quality_status_value,
                 "",
                 device_id,
                 device.name,
@@ -77,13 +81,15 @@ class AssignmentManager:
                 assignment_id=assignment_id,
                 initial_date=initial_date,
                 expected_return_date=expected_return_date,
-                quality_status=quality_status,
                 notes="",
                 device=device,
                 assignee=assignee
             )
         except Exception as e:
             print(f"Error creating assignment: {e}")
+            if conn:
+                conn.rollback()
+                conn.close()
             return None
         
     def close_assignment(
@@ -96,6 +102,7 @@ class AssignmentManager:
     ):
         if return_date_today:
             actual_return_date = datetime.now()
+            actual_return_date_str = actual_return_date.isoformat()
 
         new_device_status = DeviceStatus.OUT_OF_SERVICE if broken_status else DeviceStatus.AVAILABLE
 
@@ -122,7 +129,7 @@ class AssignmentManager:
             # Update assignment
             cursor.execute(query_update_assignment, (
                 return_quality_status.value,
-                actual_return_date,
+                actual_return_date_str,
                 AssignmentStatus.CLOSED.value,
                 note_append,
                 assignment_id
@@ -196,12 +203,10 @@ class AssignmentManager:
             assignment_id=row['assignment_id'],
             initial_date=init_date,
             expected_return_date=expected_return_date,
-            quality_status=DeviceQualityStatus(row['quality_status']) if row['quality_status'] else None,
             notes=row['notes'],
             device=device,
             assignee=assignee
         )
-        
         
             
 

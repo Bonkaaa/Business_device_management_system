@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QHeaderView, QAbstractItemView, QMessageBox, 
     QDialog, QFormLayout, QComboBox, QDateEdit, QLabel, QCheckBox, QGroupBox, QLineEdit
 )
+from datetime import datetime
 from PyQt6.QtCore import Qt, QDate
 from PyQt6.QtGui import QColor, QBrush, QFont
 from src.utils.constant_class import AssignmentStatus, DeviceQualityStatus
@@ -301,7 +302,8 @@ class ReturnAssignmentDialog(QDialog):
         layout.addRow("Ngày trả thực tế:", self.return_date_edit)
 
         btn_box = QHBoxLayout()
-        btn_ok = QPushButton("Hoàn tất"); btn_ok.clicked.connect(self.accept)
+        btn_ok = QPushButton("Hoàn tất")
+        btn_ok.clicked.connect(self.accept)
         btn_box.addWidget(btn_ok)
         self.setLayout(layout)
 
