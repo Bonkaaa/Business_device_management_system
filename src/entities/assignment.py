@@ -45,6 +45,17 @@ class Assignment:
     def get_notes(self) -> str:
         return self._notes
     
+    def get_initial_date(self) -> datetime:
+        return self.__initial_date
+    
+    def get_assignee(self) -> Assignee:
+        return self._assignee
+    
+    def get_actual_return_date(self) -> datetime | None:
+        if hasattr(self, '_Assignment__actual_return_date'):
+            return self.__actual_return_date
+        return None
+    
     def to_dict(self) -> dict:
         device_id = self._device.get_id()
         assignee_id = self._assignee.get_id()

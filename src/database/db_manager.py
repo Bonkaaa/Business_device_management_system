@@ -50,13 +50,16 @@ class DatabaseManager:
         query_asssignments = """
             CREATE TABLE IF NOT EXISTS assignments (
                 assignment_id TEXT PRIMARY KEY,
-                device_id TEXT,
-                assignee_id TEXT,
                 initial_date TEXT,
                 expected_return_date TEXT,
                 actual_return_date TEXT,
                 status TEXT,
+                quality_status TEXT,
                 notes TEXT,
+                device_id TEXT,
+                device_name TEXT,
+                assignee_id TEXT,
+                assignee_name TEXT,
                 FOREIGN KEY(device_id) REFERENCES devices(device_id)
             );
         """

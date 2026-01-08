@@ -15,13 +15,17 @@ class Device:
         purchase_date: str,
         assigned_to: Assignee | None,
         specifications: Dict[str, Any],
+        quality_status: DeviceQualityStatus | None = None,
     ):
         # Private attributes
         self.__status = status
         self.__purchase_date = purchase_date
         self.__assigned_to = assigned_to
         self.__specifications = specifications
-        self.__device_quality_status = DeviceQualityStatus.GOOD
+        if quality_status is not None:
+            self.__device_quality_status = quality_status
+        else:
+            self.__device_quality_status = DeviceQualityStatus.GOOD
 
         # Protected attributes
         self._device_id = device_id

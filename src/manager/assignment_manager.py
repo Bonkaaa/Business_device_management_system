@@ -32,8 +32,8 @@ class AssignmentManager:
 
         query_insert = """
             INSERT INTO assignments (
-                assignment_id, initial_date, expected_return_date, quality_status, notes, device_id, assignee_id, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                assignment_id, initial_date, expected_return_date, actual_return_date, status, quality_status, notes, device_id, device_name, assignee_id, assignee_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         query_update_device = """
@@ -51,11 +51,14 @@ class AssignmentManager:
                 assignment_id,
                 initial_date,
                 expected_return_date,
+                None,
+                AssignmentStatus.OPEN.value,
                 quality_status_value if quality_status is not None else None,
                 "",
                 device_id,
+                device.name,
                 assignee_id,
-                AssignmentStatus.OPEN.value
+                assignee.name,
             ))
 
             # Update device status and assigned_to
@@ -163,6 +166,16 @@ class AssignmentManager:
         query = "SELECT * FROM assignments WHERE status = ? AND expected_return_date < ?"
         params = (AssignmentStatus.OPEN.value, current_date)
         rows = self.db_manager.fetch_all(query, params)
+
+        assignments = []
+        for row in rows:
+            assignment = self._row_to_assignment(row)
+            assignments.append(assignment)
+        return assignments
+    
+    def get_all_assignments(self) -> list[Assignment]:
+        query = "SELECT * FROM assignments"
+        rows = self.db_manager.fetch_all(query)
 
         assignments = []
         for row in rows:

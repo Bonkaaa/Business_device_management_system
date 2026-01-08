@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QMainWindow, QTabWidget, QMessageBox
 from .inventory_tab import InventoryTab
 from .hr_tab import HRTab
+from .assignment_tab import AssignmentTab
 
 class MainWindow(QMainWindow):
     def __init__(self, inventory, hr, assignment, maintenance):
@@ -25,3 +26,7 @@ class MainWindow(QMainWindow):
         # Tab HR
         self.tab_hr = HRTab(self.hr_manager)
         self.tabs.addTab(self.tab_hr, "👥 Quản Lý Nhân Sự")
+
+        # Tab Assignments
+        self.tab_assignments = AssignmentTab(self.assignment_manager, self.inventory_manager, self.hr_manager)
+        self.tabs.addTab(self.tab_assignments, "📝 Quản Lý Giao Thiết Bị")
