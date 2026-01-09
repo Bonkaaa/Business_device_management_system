@@ -10,6 +10,8 @@ class Assignment:
         assignment_id: str,
         initial_date: datetime,
         expected_return_date: datetime | None,
+        actual_return_date: datetime | None,
+        status: AssignmentStatus | None,
         notes: str | None,
 
         device: Device,
@@ -18,6 +20,7 @@ class Assignment:
         # Private attributes
         self.__initial_date = initial_date
         self.__expected_return_date = expected_return_date
+        self.__actual_return_date = actual_return_date
 
 
         # Protected attributes
@@ -26,8 +29,8 @@ class Assignment:
         self._device = device
         self._assignee = assignee
 
-        self._notes += f"[Khởi tạo] Vào ngày {initial_date.isoformat()}, thiết bị {assignment_id} đã được giao cho người dùng/phòng ban {assignee.get_id() - assignee.get_name()}."
-        self.__status = AssignmentStatus.OPEN
+        self._notes += f"[Khởi tạo] Vào ngày {initial_date.isoformat()}, thiết bị {assignment_id} đã được giao cho người dùng/phòng ban {assignee.get_id()} - {assignee.name}."
+        self.__status = status if status is not None else AssignmentStatus.OPEN
         self.__quality_status = self._device.get_status()["status"]
 
     def get_id(self) -> str:
@@ -52,9 +55,10 @@ class Assignment:
         return self._assignee
     
     def get_actual_return_date(self) -> datetime | None:
-        if hasattr(self, '_Assignment__actual_return_date'):
-            return self.__actual_return_date
-        return None
+        return self.__actual_return_date if hasattr(self, '_Assignment__actual_return_date') else None
+    
+    def update_status(self, new_status: AssignmentStatus):
+        self.__status = new_status
     
     def to_dict(self) -> dict:
         device_id = self._device.get_id()

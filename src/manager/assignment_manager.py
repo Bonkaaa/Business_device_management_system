@@ -9,8 +9,10 @@ from .inventory import Inventory
 
 
 class AssignmentManager:
-    def __init__(self, inventory_manager: Inventory, hr_manager: HRManager, db_path: str):
+    def __init__(self, db_path: str):
         self.db_manager = DatabaseManager(db_path)
+
+    def set_managers(self, inventory_manager: Inventory, hr_manager: HRManager) -> None:
         self.inventory_manager = inventory_manager
         self.hr_manager = hr_manager
 
@@ -21,6 +23,9 @@ class AssignmentManager:
         expected_return_date: datetime | None,
         quality_status: DeviceQualityStatus | None
     ):
+        if self.has_active_assignment(device.get_id()):
+            raise Exception(f"Thiết bị {device.get_id()} đang có phiếu bàn giao ở trạng thái mở. Không thể tạo phiếu mới.")
+        
         assignment_id = generate_assignment_id()
         initial_date = datetime.now()
         initial_date_str = initial_date.isoformat()
@@ -34,6 +39,17 @@ class AssignmentManager:
         assignee_id = assignee.get_id()
         expected_return_date_str = expected_return_date.isoformat() if expected_return_date else None
 
+        current_assignee_devices = assignee.get_assigned_devices()
+        current_assignee_devices.append(f"{device.get_id()}-{device.name}")
+        current_assignee_devices_str = ",".join(current_assignee_devices)
+
+        # Check if assignee is employee or department to handle assigned_devices properly
+        if assignee_id.startswith("EMP"):
+            flag_employee = True
+        else:
+            flag_employee = False
+
+
         query_insert = """
             INSERT INTO assignments (
                 assignment_id, initial_date, expected_return_date, actual_return_date, status, quality_status, notes, device_id, device_name, assignee_id, assignee_name
@@ -44,6 +60,14 @@ class AssignmentManager:
             UPDATE devices
             SET status = ?, assigned_to = ?
             WHERE device_id = ?
+        """
+
+        table_name = "employees" if flag_employee else "departments"
+        id = "employee_id" if flag_employee else "department_id"
+        query_update_assignee = f"""
+            UPDATE {table_name}
+            SET assigned_devices =  ?
+            WHERE {id} = ?
         """
 
         try:
@@ -72,15 +96,25 @@ class AssignmentManager:
                 device_id
             ))
 
-            # MISSING UPDATE ASSIGNEE'S ASSIGNED DEVICES IF NEEDED
+            # Update assignee's assigned devices
+            cursor.execute(query_update_assignee, (
+                current_assignee_devices_str,
+                assignee_id
+            ))
 
             conn.commit()
             conn.close()
+
+            
+            device.update_device_status(DeviceStatus.ASSIGNED)
+            device.update_assigned_to(assignee.name)
 
             return Assignment(
                 assignment_id=assignment_id,
                 initial_date=initial_date,
                 expected_return_date=expected_return_date,
+                actual_return_date=None,
+                status=None,
                 notes="",
                 device=device,
                 assignee=assignee
@@ -96,13 +130,10 @@ class AssignmentManager:
         self,
         assignment_id: str,
         return_quality_status: DeviceQualityStatus,
-        actual_return_date: datetime | None = None,
-        return_date_today: bool = True,
+        actual_return_date: str | None = None,
         broken_status: bool = False,
     ):
-        if return_date_today:
-            actual_return_date = datetime.now()
-            actual_return_date_str = actual_return_date.isoformat()
+        actual_return_date_str = actual_return_date
 
         new_device_status = DeviceStatus.OUT_OF_SERVICE if broken_status else DeviceStatus.AVAILABLE
 
@@ -157,6 +188,30 @@ class AssignmentManager:
             return None
         return self._row_to_assignment(row)
     
+    def get_active_assignment_by_assignee_id(self, assignee_id: str) -> list[Assignment] | None:
+        query = "SELECT * FROM assignments WHERE assignee_id = ? AND status = ?"
+        params = (assignee_id, AssignmentStatus.OPEN.value)
+        rows = self.db_manager.fetch_all(query, params)
+
+        if not rows:
+            return None
+        
+        assignments = []
+        for row in rows:
+            assignment = self._row_to_assignment(row)
+            assignments.append(assignment)
+        return assignments
+    
+    def get_active_assignment_by_device_id(self, device_id: str) -> Assignment | None:
+        query = "SELECT * FROM assignments WHERE device_id = ? AND status = ?"
+        params = (device_id, AssignmentStatus.OPEN.value)
+        row = self.db_manager.fetch_one(query, params)
+
+        if not row:
+            return None
+        return self._row_to_assignment(row)
+        
+    
     def get_active_assignments(self) -> list[Assignment]:
         query = "SELECT * FROM assignments WHERE status = ?"
         params = (AssignmentStatus.OPEN.value,)
@@ -189,6 +244,15 @@ class AssignmentManager:
             assignment = self._row_to_assignment(row)
             assignments.append(assignment)
         return assignments
+    
+    def has_active_assignment(self, device_id: str) -> bool:
+        query = "SELECT COUNT(*) as count FROM assignments WHERE device_id = ? AND status = ?"
+        params = (device_id, AssignmentStatus.OPEN.value)
+        row = self.db_manager.fetch_one(query, params)
+
+        if row and row['count'] > 0:
+            return True
+        return False
         
     # ======= Helper Methods =======
     def _row_to_assignment(self, row) -> Assignment:
@@ -198,11 +262,16 @@ class AssignmentManager:
         
         init_date = datetime.fromisoformat(row['initial_date'])
         expected_return_date = datetime.fromisoformat(row['expected_return_date']) if row['expected_return_date'] else None
+        actual_return_date = datetime.fromisoformat(row['actual_return_date']) if row['actual_return_date'] else None
+
+        status = AssignmentStatus(row['status'])
 
         return Assignment(
             assignment_id=row['assignment_id'],
             initial_date=init_date,
             expected_return_date=expected_return_date,
+            actual_return_date=actual_return_date,
+            status=status,
             notes=row['notes'],
             device=device,
             assignee=assignee

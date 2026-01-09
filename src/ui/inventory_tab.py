@@ -30,6 +30,12 @@ class DeviceDetailDialog(QDialog):
         status_str = status_info['status'].value if hasattr(status_info['status'], 'value') else str(status_info['status'])
         quality_str = self.device.get_quality_status().value if hasattr(self.device.get_quality_status(), 'value') else str(self.device.get_quality_status())
         assigned_to = status_info.get('assigned_to') or "Chưa được giao"
+        if assigned_to != "Chưa được giao":
+            assigned_to_name = assigned_to.name
+            assigned_to_id = assigned_to.get_id()
+            assigned_to_display = f"{assigned_to_name} ({assigned_to_id})"
+        else:
+            assigned_to_display = "Chưa được giao"
 
         form.addRow("<b>Mã thiết bị:</b>", QLabel(self.device.get_id()))
         form.addRow("<b>Tên thiết bị:</b>", QLabel(self.device.name))
@@ -37,7 +43,7 @@ class DeviceDetailDialog(QDialog):
         form.addRow("<b>Trạng thái:</b>", QLabel(status_str))
         form.addRow("<b>Chất lượng:</b>", QLabel(quality_str))
         form.addRow("<b>Ngày mua:</b>", QLabel(self.device.get_purchase_date()))
-        form.addRow("<b>Người sử dụng:</b>", QLabel(str(assigned_to)))
+        form.addRow("<b>Người sử dụng:</b>", QLabel(assigned_to_display))
         
         group_basic.setLayout(form)
         layout.addWidget(group_basic)
@@ -215,10 +221,10 @@ class InventoryTab(QWidget):
             item_status.setBackground(QBrush(QColor(144, 238, 144)))  # Light green
             item_status.setForeground(QBrush(QColor(0, 0, 0)))  
         elif status_str == DeviceStatus.ASSIGNED.value:
-            item_status.setBackground(QBrush(QColor(255, 255, 224)))  # Light yellow
+            item_status.setBackground(QBrush(QColor("#F9FD00")))  # Yellow
             item_status.setForeground(QBrush(QColor(0, 0, 0))) 
         elif status_str == DeviceStatus.MAINTENANCE.value:
-            item_status.setBackground(QBrush(QColor(255, 182, 193)))  # Light red
+            item_status.setBackground(QBrush(QColor("#FF0D0D")))  # Red
             item_status.setForeground(QBrush(QColor(0, 0, 0))) 
             
         self.table.setItem(row_idx, 3, item_status)
@@ -272,10 +278,28 @@ class InventoryTab(QWidget):
             return
         
         device_id = self.table.item(current_row, 0).text()
+        device = self.inventory_manager.get_device_by_id(device_id)
+        if not device:
+            QMessageBox.critical(self, "Lỗi", "Thiết bị không tồn tại.")
+            return
+        assignee_id = device.get_status().get('assigned_to')
+
         confirm = QMessageBox.question(self, "Xác nhận", f"Xóa thiết bị {device_id}?", 
                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if confirm == QMessageBox.StandardButton.Yes:
             try:
+                # Remove assign_devices in assignees first
+                self.inventory_manager.hr_manager.remove_device_from_assigned_devices_list_of_assignee(assignee_id, device_id)
+
+                # Close any active assignments related to this device
+                assignment = self.inventory_manager.assignment_manager.get_active_assignment_by_device_id(device_id)
+                if assignment:
+                    self.inventory_manager.assignment_manager.close_assignment(
+                        assignment_id=assignment.get_id(),
+                        return_quality_status=DeviceQualityStatus.RETIRED,
+                        broken_status=True
+                    )
+                # Finally, remove device from database
                 self.inventory_manager.remove_device(device_id)
                 self.load_data()
             except Exception as e:

@@ -9,8 +9,10 @@ from .inventory import Inventory
 from .hr_manager import HRManager
 
 class MaintenanceManager:
-    def __init__(self, inventory_manager: Inventory, hr_manager: HRManager, db_path: str):
+    def __init__(self, db_path: str):
         self.db_manager = DatabaseManager(db_path)
+
+    def set_managers(self, inventory_manager: Inventory, hr_manager: HRManager) -> None:
         self.inventory_manager = inventory_manager
         self.hr_manager = hr_manager
 

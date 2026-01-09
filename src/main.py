@@ -10,10 +10,16 @@ from ui import MainWindow
 
 def main():
     print("Đang khởi động ứng dụng Quản lý Thiết bị CNTT...")
-    hr_manager = HRManager(db_path="data/hr_database.db")
-    inventory_manager = Inventory(db_path="data/inventory_database.db", hr_manager=hr_manager)
-    assignment_manager = AssignmentManager(db_path="data/assignment_database.db", inventory_manager=inventory_manager, hr_manager=hr_manager)
-    maintenance_manager = MaintenanceManager(db_path="data/maintenance_database.db", inventory_manager=inventory_manager, hr_manager=hr_manager)
+    hr_manager = HRManager(db_path="data/sharedatabase.db")
+    inventory_manager = Inventory(db_path="data/sharedatabase.db")
+    assignment_manager = AssignmentManager(db_path="data/sharedatabase.db")
+    maintenance_manager = MaintenanceManager(db_path="data/sharedatabase.db")
+
+    # Thiết lập tham chiếu chéo giữa các manager
+    hr_manager.set_managers(inventory_manager, assignment_manager)
+    inventory_manager.set_managers(hr_manager, assignment_manager)
+    assignment_manager.set_managers(inventory_manager, hr_manager)
+    maintenance_manager.set_managers(inventory_manager, hr_manager)
 
     app = QApplication(sys.argv)
 

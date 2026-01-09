@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QDialog, QFormLayout, QComboBox, QDateEdit, QLabel, QCheckBox, QGroupBox, QLineEdit
 )
 from datetime import datetime
-from PyQt6.QtCore import Qt, QDate
+from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont
 from src.utils.constant_class import AssignmentStatus, DeviceQualityStatus
 
@@ -23,6 +23,9 @@ class AssignmentDetailDialog(QDialog):
 
         # Xử lý lấy tên (Sửa lỗi .name thay vì .get_name())
         dev_name = ass.get_device().name if ass.get_device() else "N/A"
+        dev_id = ass.get_device().get_id() if ass.get_device() else "N/A"
+        dev_display = f"{dev_name} ({dev_id})"
+
         assignee_name = ass.get_assignee().name if ass.get_assignee() else "N/A"
         
         status_val = ass.get_status()
@@ -30,7 +33,7 @@ class AssignmentDetailDialog(QDialog):
 
         form.addRow("<b>Mã phiếu:</b>", QLabel(ass.get_id()))
         form.addRow("<b>Nhân viên/Phòng ban:</b>", QLabel(assignee_name))
-        form.addRow("<b>Thiết bị:</b>", QLabel(dev_name))
+        form.addRow("<b>Thiết bị:</b>", QLabel(dev_display)) 
         form.addRow("<b>Trạng thái:</b>", QLabel(status_str))
         
         # Ngày tháng
@@ -52,6 +55,7 @@ class AssignmentDetailDialog(QDialog):
 
 # === 2. Tab Assignment Chính ===
 class AssignmentTab(QWidget):
+    data_changed = pyqtSignal()
     def __init__(self, assignment_manager, inventory_manager, hr_manager):
         super().__init__()
         self.assignment_manager = assignment_manager
@@ -170,12 +174,14 @@ class AssignmentTab(QWidget):
         
         item_status = QTableWidgetItem(status_str)
         if status_str == AssignmentStatus.OPEN.value:
-            item_status.setForeground(QBrush(QColor("#2E7D32")))
+            item_status.setBackground(QBrush(QColor(144, 238, 144)))  # Light green
+            item_status.setForeground(QBrush(QColor(0, 0, 0)))
         elif status_str == AssignmentStatus.OVERDUE.value:
-            item_status.setForeground(QBrush(QColor("#D32F2F"))) # Đỏ đậm cho quá hạn
-            item_status.setFont(QFont("", -1, QFont.Weight.Bold))
+            item_status.setBackground(QBrush(QColor(255, 255, 224)))  # Light yellow
+            item_status.setForeground(QBrush(QColor(0, 0, 0))) 
         else:
-            item_status.setForeground(QBrush(QColor("#757575")))
+            item_status.setBackground(QBrush(QColor("#646464")))
+            item_status.setForeground(QBrush(QColor(0, 0, 0)))
             
         self.table.setItem(row, 3, item_status)
 
@@ -207,6 +213,8 @@ class AssignmentTab(QWidget):
                     quality_status=quality_status
                 )
                 self.load_data()
+
+                self.data_changed.emit()
                 QMessageBox.information(self, "Thành Công", "Đã giao thiết bị.")
             except Exception as e:
                 QMessageBox.critical(self, "Lỗi", str(e))
@@ -235,6 +243,8 @@ class AssignmentTab(QWidget):
                     actual_return_date=data["actual_return_date"]
                 )
                 self.load_data()
+
+                self.data_changed.emit()
                 QMessageBox.information(self, "Thành Công", "Đã nhận lại thiết bị.")
             except Exception as e:
                 QMessageBox.critical(self, "Lỗi", str(e))
@@ -283,33 +293,74 @@ class CreateAssignmentDialog(QDialog):
 class ReturnAssignmentDialog(QDialog):
     def __init__(self, assignment_id, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"Trả thiết bị - {assignment_id}")
-        self.setFixedSize(350, 220)
+        self.setWindowTitle(f"Trả Thiết Bị {assignment_id}")
+        self.setFixedSize(350, 200)
+
         layout = QFormLayout()
 
+        # Quality ComboBox
         self.quality_combo = QComboBox()
         self.quality_combo.addItem("Tốt", DeviceQualityStatus.GOOD)
         self.quality_combo.addItem("Hỏng", DeviceQualityStatus.BROKEN)
         self.quality_combo.addItem("Thanh Lý", DeviceQualityStatus.RETIRED)
 
-        self.check_broken = QCheckBox("Báo cáo hỏng hóc nặng")
-        self.return_date_edit = QDateEdit()
-        self.return_date_edit.setCalendarPopup(True)
-        self.return_date_edit.setDate(QDate.currentDate())
+        self.check_broken = QCheckBox("Thiết bị bị hỏng")
+        self.quality_combo.currentIndexChanged.connect(self.on_quality_change)
 
-        layout.addRow("Chất lượng hiện tại:", self.quality_combo)
+        # Checkbox for return date today
+        self.return_date_today = QCheckBox("Trả thiết bị ngày hôm nay")
+        self.return_date_today.setChecked(True)
+
+        # Container for label + calendar
+        self.return_date_container = QWidget()
+        return_date_layout = QHBoxLayout(self.return_date_container)
+        return_date_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.return_date_label = QLabel("Ngày Trả Thực Tế:")
+        self.actual_return_date_edit = QDateEdit()
+        self.actual_return_date_edit.setCalendarPopup(True)
+        self.actual_return_date_edit.setDate(QDate.currentDate())
+
+        return_date_layout.addWidget(self.return_date_label)
+        return_date_layout.addWidget(self.actual_return_date_edit)
+
+        self.return_date_container.hide()
+        self.return_date_today.toggled.connect(self.on_return_date_toggle)
+
+        layout.addRow("Chọn Chất Lượng Trả:", self.quality_combo)
         layout.addRow("", self.check_broken)
-        layout.addRow("Ngày trả thực tế:", self.return_date_edit)
+        layout.addRow(self.return_date_today)
+        layout.addRow(self.return_date_container)
+        
 
+        # Buttons
         btn_box = QHBoxLayout()
-        btn_ok = QPushButton("Hoàn tất")
+        btn_ok = QPushButton("Xác Nhận")
         btn_ok.clicked.connect(self.accept)
+        btn_cancel = QPushButton("Hủy")
+        btn_cancel.clicked.connect(self.reject)
         btn_box.addWidget(btn_ok)
+        btn_box.addWidget(btn_cancel)
+        layout.addRow(btn_box)
+
         self.setLayout(layout)
+
+    def on_quality_change(self, index):
+        quality = self.quality_combo.itemData(index)
+        if quality == DeviceQualityStatus.BROKEN:
+            self.check_broken.setChecked(True)
+        else:
+            self.check_broken.setChecked(False)
+
+    def on_return_date_toggle(self, checked: bool):
+        if checked:
+            self.return_date_container.hide()
+        else:
+            self.return_date_container.show()
 
     def get_data(self):
         return {
             "return_quality_status": self.quality_combo.currentData(),
             "broken_status": self.check_broken.isChecked(),
-            "actual_return_date": self.return_date_edit.date().toPyDate()
+            "actual_return_date": self.actual_return_date_edit.date().toString("yyyy-MM-dd") if not self.return_date_today.isChecked() else datetime.now().strftime("%Y-%m-%d")
         }

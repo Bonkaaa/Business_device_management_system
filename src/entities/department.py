@@ -8,16 +8,18 @@ class Department(Assignee):
         name: str, 
         department_id: str,
         manager: Employee | None,
-        location: str
+        location: str,
+        assigned_devices: list | None = None,
+        employees: list | None = None
     ):
-        super().__init__(name, department_id)
+        super().__init__(name, department_id, assigned_devices)
 
         # Protected attributes
         self._location = location
         self._manager = manager
 
         # Private attributes
-        self.__employees = []
+        self.__employees = employees if employees is not None else []
 
     def get_employees(self) -> list:
         return self.__employees

@@ -8,9 +8,14 @@ from utils.id_generators import generate_device_id
 from utils.constant_class import DeviceStatus, DeviceQualityStatus
 
 class Inventory:
-    def __init__(self, hr_manager, db_path: str):
+    def __init__(self, db_path: str):
         self.db_manager = DatabaseManager(db_path)
+        self.hr_manager = None
+        self.assignment_manager = None
+
+    def set_managers(self, hr_manager, assignment_manager) -> None:
         self.hr_manager = hr_manager
+        self.assignment_manager = assignment_manager
 
     def add_device(
         self,
@@ -172,6 +177,21 @@ class Inventory:
             devices.append(device)
 
         return devices
+    
+    def update_device_status_and_assignee(
+        self,
+        device_id: str,
+        new_status: DeviceStatus,
+        new_assignee_id: str | None = None,
+    ) -> None:
+        query = """
+        UPDATE devices
+        SET status = ?, assigned_to = ?
+        WHERE device_id = ?
+        """
+        params = (new_status.value, new_assignee_id, device_id)
+        self.db_manager.execute_query(query, params)
+
     
 
         

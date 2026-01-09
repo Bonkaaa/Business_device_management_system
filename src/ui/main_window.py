@@ -30,3 +30,5 @@ class MainWindow(QMainWindow):
         # Tab Assignments
         self.tab_assignments = AssignmentTab(self.assignment_manager, self.inventory_manager, self.hr_manager)
         self.tabs.addTab(self.tab_assignments, "📝 Quản Lý Giao Thiết Bị")
+
+        self.tab_assignments.data_changed.connect(self.tab_inventory.load_data)

@@ -13,9 +13,10 @@ class Employee(Assignee):
         email: str,
         phone_number: str,
         position: str,
-        department: Optional["Department"] = None
+        department: Optional["Department"] = None,
+        assigned_devices: list | None = None
     ):
-        super().__init__(name, employee_id)
+        super().__init__(name, employee_id, assigned_devices)
 
         # Public attributes
         self.email = email

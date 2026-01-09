@@ -17,7 +17,10 @@ class DatabaseManager:
                 department_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 location TEXT,
-                manager_name TEXT
+                manager_id TEXT,
+                manager_name TEXT,
+                assigned_devices TEXT, -- Lưu chuỗi JSON của danh sách device IDs,
+                employees TEXT -- Lưu chuỗi JSON của danh sách employee IDs
             );
         """
 
@@ -30,6 +33,7 @@ class DatabaseManager:
                 position TEXT,
                 department_id TEXT, -- Khóa ngoại trỏ về departments
                 department_name TEXT,
+                assigned_devices TEXT, -- Lưu chuỗi JSON của danh sách device IDs,
                 FOREIGN KEY(department_id) REFERENCES departments(department_id)
             );
         """

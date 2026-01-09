@@ -9,10 +9,11 @@ class Assignee(ABC):
         self,
         name: str,
         assignee_id: str,
+        assigned_devices: list | None = None
     ):
         self._id = assignee_id
         self.name = name
-        self.__assigned_devices = [] 
+        self.__assigned_devices = assigned_devices if assigned_devices is not None else []
 
     def get_id(self) -> str:
         return self._id
