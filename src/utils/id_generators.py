@@ -23,9 +23,7 @@ def generate_department_id():
     
 def generate_ticket_id():
         date_str = time.strftime("%Y%m%d")
-
-        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits), k=4)
-
+        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
         return f"TKT-{date_str}-{random_str}"
     
 def generate_assignment_id():

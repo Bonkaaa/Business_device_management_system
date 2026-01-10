@@ -20,7 +20,6 @@ class AssignmentStatus(Enum):
 
 class MaintenanceStatus(Enum):
     REPORTED = "Đã báo cáo"
-    IN_PROGRESS = "Đang tiến hành"
     RESOLVED = "Đã giải quyết"
     CLOSED = "Đóng"
 

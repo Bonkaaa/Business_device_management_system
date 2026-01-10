@@ -170,7 +170,9 @@ class InventoryTab(QWidget):
     def load_data(self):
         try:
             if hasattr(self.inventory_manager, 'get_all_devices'):
-                self.all_devices = self.inventory_manager.get_all_devices()
+                all_devices = self.inventory_manager.get_all_devices()
+                # Filter out None devices
+                self.all_devices = [d for d in all_devices if d is not None]
             self.apply_filters()
         except Exception as e:
             QMessageBox.critical(self, "Lỗi", f"Không thể tải dữ liệu: {e}")
@@ -184,6 +186,10 @@ class InventoryTab(QWidget):
         self.table.setRowCount(0)
 
         for device in self.all_devices:
+            # Skip None devices
+            if device is None:
+                continue
+                
             d_id = device.get_id().lower()
             d_name = device.name.lower()
             
@@ -288,8 +294,9 @@ class InventoryTab(QWidget):
                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if confirm == QMessageBox.StandardButton.Yes:
             try:
-                # Remove assign_devices in assignees first
-                self.inventory_manager.hr_manager.remove_device_from_assigned_devices_list_of_assignee(assignee_id, device_id)
+                # Remove assign_devices in assignees first (only if device is assigned)
+                if assignee_id is not None:
+                    self.inventory_manager.hr_manager.remove_device_from_assigned_devices_list_of_assignee(assignee_id, device_id)
 
                 # Close any active assignments related to this device
                 assignment = self.inventory_manager.assignment_manager.get_active_assignment_by_device_id(device_id)

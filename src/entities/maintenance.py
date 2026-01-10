@@ -10,6 +10,9 @@ class MaintenanceTicket:
         issue_description: str,
         status: MaintenanceStatus,
         reported_date: datetime,
+        technician_notes: str | None,
+        date_resolved: datetime | None,
+        costs: float | None,
 
         device: Device,
         reporter: Employee
@@ -24,10 +27,9 @@ class MaintenanceTicket:
         self._status = status
         self._reported_date = reported_date
 
-        self.__date_resolved = None
-        self.__technician_notes = ""
-
-        self.__technician_notes += f"[Khởi tạo] Vào ngày {reported_date.isoformat()}, phiếu bảo trì {ticket_id} đã được tạo cho thiết bị {device.get_id()} bởi nhân viên {reporter.get_id() - reporter.get_name()} với mô tả sự cố: {issue_description}."
+        self.__date_resolved = date_resolved if date_resolved else None
+        self.__technician_notes = technician_notes if technician_notes else ""
+        self.__costs = costs if costs else None
 
     def update_status(self, new_status: MaintenanceStatus):
         if new_status not in MaintenanceStatus:
@@ -36,14 +38,11 @@ class MaintenanceTicket:
 
     def resolve_ticket(
         self, 
-        technician_notes: str | None = None, 
         costs: float | None = None
     ):
         self._status = MaintenanceStatus.RESOLVED
-        self.date_resolved = datetime.now()
-        self.technician_notes += f"[Giải quyết] Vào ngày {self.date_resolved.isoformat()}, phiếu bảo trì {self._ticket_id} đã được giải quyết. Tiền công: {costs if costs is not None else 'N/A'}."
-        if technician_notes:
-            self.technician_notes += f" Ghi chú kỹ thuật viên: {technician_notes}"
+        self.__date_resolved = datetime.now()
+        self.costs = costs
 
     def to_dict(self) -> dict:
         return {
@@ -74,6 +73,9 @@ class MaintenanceTicket:
     
     def get_reporter(self) -> Employee:
         return self._reporter
+    
+    def get_costs(self) -> float | None:
+        return self.__costs if hasattr(self, '_MaintenanceTicket__costs') else None
     
 
     

@@ -31,7 +31,11 @@ class Assignment:
 
         self._notes += f"[Khởi tạo] Vào ngày {initial_date.isoformat()}, thiết bị {assignment_id} đã được giao cho người dùng/phòng ban {assignee.get_id()} - {assignee.name}."
         self.__status = status if status is not None else AssignmentStatus.OPEN
-        self.__quality_status = self._device.get_status()["status"]
+
+        if self._device is not None:
+            self.__quality_status = self._device.get_status()["status"]
+        else:
+            self.__quality_status = None
 
     def get_id(self) -> str:
         return self._assignment_id

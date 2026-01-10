@@ -27,8 +27,8 @@ class MaintenanceManager:
 
         # Query to insert new maintenance ticket
         query_ticket = """
-            INSERT INTO maintenance_tickets (ticket_id, device_id, reporter_id, issue_description, status, reported_date, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO maintenance_tickets (ticket_id, device_id, reporter_id, issue_description, status, reported_date, technician_notes, date_resolved, cost)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         query_device = """
@@ -44,7 +44,7 @@ class MaintenanceManager:
             device_id = device.get_id()
             reporter_id = reporter.get_id()
 
-            technician_notes = f"[Khởi tạo] Vào ngày {reported_date.isoformat()}, phiếu bảo trì {ticket_id} đã được tạo cho thiết bị {device_id} bởi nhân viên {reporter_id} với mô tả sự cố: {issue_description}."
+            technician_notes = f"[Khởi tạo] Vào ngày {reported_date.isoformat()}, phiếu bảo trì {ticket_id} đã được tạo cho thiết bị {device_id} bởi nhân viên {reporter_id} với mô tả sự cố: {issue_description}.\n"
 
             # Insert maintenance ticket
             cursor.execute(query_ticket, (
@@ -54,7 +54,9 @@ class MaintenanceManager:
                 issue_description,
                 MaintenanceStatus.REPORTED.value,
                 reported_date,
-                technician_notes
+                technician_notes,
+                None,
+                None
             ))
 
             # Update device status and quality status
@@ -72,6 +74,9 @@ class MaintenanceManager:
                 issue_description=issue_description,
                 status=MaintenanceStatus.REPORTED,
                 reported_date=reported_date,
+                technician_notes=technician_notes,
+                date_resolved=None,
+                costs=None,
                 device=device,
                 reporter=reporter
             )
@@ -95,13 +100,13 @@ class MaintenanceManager:
             return
         
         updated_notes = current_ticket.to_dict().get("technician_notes", "")
-        updated_notes += f"[Giải quyết] Vào ngày {date_resolved.isoformat()}, phiếu bảo trì {ticket_id} đã được giải quyết. Tiền công: {costs if costs is not None else 'N/A'}."
+        updated_notes += f"[Giải quyết] Vào ngày {date_resolved.isoformat()}, phiếu bảo trì {ticket_id} đã được giải quyết. Tiền công: {costs if costs is not None else 'N/A'}.\n"
         if technician_notes:
-            updated_notes += f" Ghi chú kỹ thuật viên: {technician_notes}"
+            updated_notes += f" Ghi chú kỹ thuật viên: {technician_notes}\n"
 
         query = """
             UPDATE maintenance_tickets
-            SET status = ?, date_resolved = ?, notes = ?, costs = ?
+            SET status = ?, date_resolved = ?, technician_notes = ?, cost = ?
             WHERE ticket_id = ?
         """
 
@@ -146,13 +151,15 @@ class MaintenanceManager:
 
                 if row and row[0]:
                     new_status = DeviceStatus.ASSIGNED.value
+                else:
+                    new_status = DeviceStatus.AVAILABLE.value
 
                 cursor.execute("""
                     UPDATE devices
                     SET status = ?, quality_status = ?
                     WHERE device_id = ?
                 """, (
-                    DeviceStatus.ASSIGNED.value,
+                    new_status,
                     DeviceQualityStatus.GOOD.value,
                     device.get_id()
                 ))
@@ -170,18 +177,20 @@ class MaintenanceManager:
                 ))
 
                 # Update assignment if exists
-                cursor.execute("""
-                    UPDATE assignments
-                    SET status = ?, return_date = ?, return_quality_status = ?, notes = notes || ?
-                    WHERE device_id = ? AND status = ?
-                """, (
-                    AssignmentStatus.CLOSED.value,
-                    datetime.now().isoformat(),
-                    DeviceQualityStatus.BROKEN.value,
-                    f"[Đóng] Vào ngày {datetime.now().isoformat()}, thiết bị {device.get_id()} đã được trả về với tình trạng chất lượng: {DeviceQualityStatus.BROKEN.value}.",
-                    device.get_id(),
-                    AssignmentStatus.OPEN.value
-                ))
+                assignemnt = self.assignment_manager.get_active_assignment_by_device_id(device.get_id())
+                if assignemnt:
+                    assignment_id = assignemnt.get_id()
+                    cursor.execute("""
+                        UPDATE assignments
+                        SET status = ?, actual_return_date = ?, quality_status = ?, notes = ?
+                        WHERE assignment_id = ?
+                    """, (
+                        AssignmentStatus.CLOSED.value,
+                        datetime.now().isoformat(),
+                        DeviceQualityStatus.BROKEN.value,
+                        f"[Đóng] Do thiết bị {device.get_id()} bị hỏng và không thể sửa chữa nên đã được ngừng sử dụng.",      
+                        assignment_id
+                    ))
             
             # Update maintenance ticket status
             cursor.execute("""
@@ -217,19 +226,20 @@ class MaintenanceManager:
         return tickets
 
     def _row_to_ticket(self, row) -> MaintenanceTicket:
-        device = self.inventory_manager.search_device_by_id(row['device_id'])
+        device = self.inventory_manager.get_device_by_id(row['device_id'])
         reporter = self.hr_manager.get_employee_by_id(row['reporter_id'])
 
         reported_date = datetime.fromisoformat(row['reported_date'])
+        date_resolved = datetime.fromisoformat(row['date_resolved']) if row['date_resolved'] else None
 
         return MaintenanceTicket(
             ticket_id=row['ticket_id'],
             issue_description=row['issue_description'],
             status=MaintenanceStatus(row['status']),
             reported_date=reported_date,
-            date_resolved=row['date_resolved'],
-            technician_notes=row['notes'],
-            costs=row['costs'],
+            date_resolved=date_resolved,
+            technician_notes=row['technician_notes'],
+            costs=row['cost'],
             device=device,
             reporter=reporter
         )
