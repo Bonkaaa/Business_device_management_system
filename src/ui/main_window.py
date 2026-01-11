@@ -104,8 +104,8 @@ class MainWindow(QMainWindow):
         # ---2. Technician ---
         elif role == UserRole.TECHNICIAN.value:
             # Tab HR và Dashboard: Vô hiệu hóa
-            self.tabs.setTabVisible(0, False)  
-            self.tabs.setTabVisible(1, False)  # 1 là index của tab HR
+            self.tabs.setTabVisible(0, False)  # Dashboard tab
+            self.tabs.setTabVisible(2, False)  # HR tab
 
             # Tab Inventory: Chỉ xem
             self.tab_inventory.btn_add.hide()
@@ -118,8 +118,8 @@ class MainWindow(QMainWindow):
         # ---3. Employee ---
         elif role == UserRole.EMPLOYEE.value:
             # Tab HR và Dashboard: Vô hiệu hóa
-            self.tabs.setTabVisible(0, False)  
-            self.tabs.setTabVisible(1, False)  # 1 là index của tab HR
+            self.tabs.setTabVisible(0, False)  # Dashboard tab
+            self.tabs.setTabVisible(2, False)  # HR tab
 
             # Tab Inventory: Chỉ xem
             self.tab_inventory.btn_add.hide()

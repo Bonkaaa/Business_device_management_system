@@ -5,6 +5,7 @@ from .hr_tab import HRTab
 from .maintenance_tab import MaintenanceTab
 from .login_window import LoginWindow
 from .dashboard_tab import DashboardTab
+from .register_window import RegisterWindow
 
 __all__ = [
     "InventoryTab",
@@ -14,4 +15,5 @@ __all__ = [
     "MaintenanceTab",
     "LoginWindow",
     "DashboardTab",
+    "RegisterWindow"
 ]

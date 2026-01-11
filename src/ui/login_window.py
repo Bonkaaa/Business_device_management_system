@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
+from .register_window import RegisterWindow
 
 class LoginWindow(QWidget):
     login_success = pyqtSignal(dict) # Signal gửi thông tin user khi login thành công
@@ -59,6 +60,28 @@ class LoginWindow(QWidget):
         self.btn_login.clicked.connect(self.handle_login)
         layout.addWidget(self.btn_login)
 
+        # Register
+        lbl_or = QLabel("- HOẶC -")
+        lbl_or.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lbl_or.setStyleSheet("color: #888;")
+        layout.addWidget(lbl_or)
+
+        self.btn_resgister = QPushButton("TẠO TÀI KHOẢN MỚI")
+        self.btn_resgister.setFixedHeight(45)
+        self.btn_resgister.setStyleSheet("""
+            QPushButton {
+                background-color: #FF9800; 
+                color: white; 
+                font-weight: bold; 
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #F57C00;
+            }
+        """)
+        self.btn_resgister.clicked.connect(self.open_register_window)
+        layout.addWidget(self.btn_resgister)
+
         self.setLayout(layout)
 
     def handle_login(self):
@@ -75,3 +98,7 @@ class LoginWindow(QWidget):
             self.close()
         else:
             QMessageBox.critical(self, "Lỗi", "Sai tên đăng nhập hoặc mật khẩu!")
+
+    def open_register_window(self):
+        self.register_window = RegisterWindow(self.auth_manager)
+        self.register_window.show()

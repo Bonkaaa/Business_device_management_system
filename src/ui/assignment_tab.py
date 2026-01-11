@@ -147,8 +147,7 @@ class AssignmentTab(QWidget):
             # Bộ lọc ComboBox sẽ lo việc hiển thị cái gì
             if is_employee and emp_id:
                 # Lấy tất cả phiếu của nhân viên này
-                # Lưu ý: Cần đảm bảo AssignmentManager có hàm get_assignments_by_assignee_id hoặc get_all_assignments_by_assignee_id trả về list
-                self.all_assignments = self.assignment_manager.get_assignments_by_assignee_id(emp_id)
+                self.all_assignments = self.assignment_manager.get_all_assignments_by_assignee_id(emp_id)
             else:
                 # Lấy tất cả phiếu hệ thống
                 self.all_assignments = self.assignment_manager.get_all_assignments()

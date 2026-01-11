@@ -56,3 +56,9 @@ class AuthManager:
     def get_current_user(self) -> dict | None:
         return self.current_user
     
+    def check_username_exists(self, username: str) -> bool:
+        query = "SELECT * FROM accounts WHERE username = ?"
+        params = (username,)
+        user_row = self.db_manager.fetch_one(query, params)
+        return user_row is not None
+    
