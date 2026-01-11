@@ -1,81 +1,81 @@
-# Business Device Management System
+# Hệ Thống Quản Lý Thiết Bị Doanh Nghiệp
 
-A comprehensive IT device management system built with PyQt6 for managing business hardware assets, employee assignments, and maintenance requests.
+Một hệ thống quản lý thiết bị CNTT toàn diện được xây dựng bằng PyQt6 để quản lý tài sản phần cứng doanh nghiệp, phân công thiết bị cho nhân viên và các yêu cầu bảo trì.
 
-## Overview
+## Tổng Quan
 
-This application provides a complete solution for IT device management in business environments. It supports multiple user roles (Admin, Employee, Technician) and handles the full lifecycle of device management from procurement to retirement, including assignment tracking and maintenance management.
+Ứng dụng này cung cấp giải pháp hoàn chỉnh cho việc quản lý thiết bị CNTT trong môi trường doanh nghiệp. Hệ thống hỗ trợ nhiều vai trò người dùng (Quản trị viên, Nhân viên, Kỹ thuật viên) và xử lý toàn bộ chu trình vòng đời của thiết bị từ khâu mua sắm đến thanh lý, bao gồm theo dõi phân công và quản lý bảo trì.
 
-## Features
+## Tính Năng
 
-### 👤 User Management
-- **Role-based access control** (Admin, Employee, Technician)
-- Secure login system with password management
-- Department and employee management
-- User registration and authentication
+### 👤 Quản Lý Người Dùng
+- **Kiểm soát truy cập theo vai trò** (Quản trị viên, Nhân viên, Kỹ thuật viên)
+- Hệ thống đăng nhập bảo mật với quản lý mật khẩu
+- Quản lý phòng ban và nhân viên
+- Đăng ký và xác thực người dùng
 
-### 💻 Device Management
-- Add, update, and retire IT devices
-- Track device details (model, serial number, status, etc.)
-- Device inventory with search and filter capabilities
-- Device status tracking (Available, In Use, Under Maintenance, Retired)
+### 💻 Quản Lý Thiết Bị
+- Thêm, cập nhật và thanh lý thiết bị CNTT
+- Theo dõi thông tin chi tiết thiết bị (model, số serial, trạng thái, v.v.)
+- Kho thiết bị với khả năng tìm kiếm và lọc
+- Theo dõi trạng thái thiết bị (Sẵn sàng, Đang sử dụng, Đang bảo trì, Đã thanh lý)
 
-### 📋 Assignment Management
-- Assign devices to employees
-- Track device assignments by employee and department
-- Return and reassign devices
-- Assignment history and audit trail
+### 📋 Quản Lý Phân Công
+- Phân công thiết bị cho nhân viên
+- Theo dõi phân công thiết bị theo nhân viên và phòng ban
+- Thu hồi và phân công lại thiết bị
+- Lịch sử phân công và kiểm toán
 
-### 🔧 Maintenance Management
-- Report device issues
-- Create and track maintenance requests
-- Maintenance workflow (Pending, In Progress, Completed)
-- Technician assignment for maintenance tasks
-- Maintenance history and status tracking
+### 🔧 Quản Lý Bảo Trì
+- Báo cáo sự cố thiết bị
+- Tạo và theo dõi yêu cầu bảo trì
+- Quy trình bảo trì (Đang chờ, Đang xử lý, Hoàn thành)
+- Phân công kỹ thuật viên cho các tác vụ bảo trì
+- Lịch sử và trạng thái bảo trì
 
-### 📊 Dashboard & Reporting
-- Real-time statistics and overview
-- Device availability metrics
-- Department-wise device distribution
-- Export reports and data
+### 📊 Bảng Điều Khiển & Báo Cáo
+- Thống kê và tổng quan theo thời gian thực
+- Số liệu về tính khả dụng của thiết bị
+- Phân phối thiết bị theo phòng ban
+- Xuất báo cáo và dữ liệu
 
-## Prerequisites
+## Yêu Cầu Hệ Thống
 
-- Python 3.8 or higher
-- pip (Python package installer)
+- Python 3.8 trở lên
+- pip (công cụ cài đặt gói Python)
 
-## Installation
+## Cài Đặt
 
-1. **Clone the repository**
+1. **Clone repository**
    ```bash
    git clone https://github.com/Bonkaaa/Business_device_management_system.git
    cd Business_device_management_system
    ```
 
-2. **Install required packages**
+2. **Cài đặt các gói cần thiết**
    ```bash
    pip install -r requirement.txt
    ```
 
-## Usage
+## Sử Dụng
 
-### Running from Source
+### Chạy Từ Mã Nguồn
 
-Navigate to the `src` directory and run:
+Di chuyển đến thư mục `src` và chạy:
 
 ```bash
 python src/main.py
 ```
 
-Or from the project root:
+Hoặc từ thư mục gốc của dự án:
 
 ```bash
 python -m src.main
 ```
 
-### Building Executable
+### Biên Dịch File Thực Thi
 
-The project includes build scripts for different platforms:
+Dự án bao gồm các script biên dịch cho nhiều nền tảng khác nhau:
 
 #### Windows (Command Prompt)
 ```batch
@@ -93,142 +93,142 @@ chmod +x ./scripts/install_app.sh
 ./scripts/install_app.sh
 ```
 
-The executable will be created in the `dist` directory.
+File thực thi sẽ được tạo trong thư mục `dist`.
 
-## Default Accounts
+## Tài Khoản Mặc Định
 
-The system creates default accounts on first run:
+Hệ thống tạo tài khoản mặc định khi chạy lần đầu:
 
-| Username | Password | Role          |
-|----------|----------|---------------|
-| admin    | admin123 | Administrator |
+| Tên đăng nhập | Mật khẩu | Vai trò        |
+|---------------|----------|----------------|
+| admin         | admin123 | Quản trị viên  |
 
-**⚠️ Important:** Change the default password after first login!
+**⚠️ Quan trọng:** Hãy đổi mật khẩu mặc định sau khi đăng nhập lần đầu!
 
-## User Roles & Permissions
+## Vai Trò Người Dùng & Quyền Hạn
 
-### Administrator
-- Full system access
-- Manage devices (add, update, retire)
-- Manage employees and departments
-- Assign/return devices
-- View all reports and statistics
-- Approve/reject device requests
+### Quản Trị Viên
+- Toàn quyền truy cập hệ thống
+- Quản lý thiết bị (thêm, cập nhật, thanh lý)
+- Quản lý nhân viên và phòng ban
+- Phân công/thu hồi thiết bị
+- Xem tất cả báo cáo và thống kê
+- Duyệt/từ chối yêu cầu thiết bị
 
-### Employee
-- Request devices
-- View assigned devices
-- Report device issues
-- View personal device history
+### Nhân Viên
+- Yêu cầu thiết bị
+- Xem thiết bị được phân công
+- Báo cáo sự cố thiết bị
+- Xem lịch sử thiết bị cá nhân
 
-### Technician
-- View maintenance requests
-- Process and complete maintenance tasks
-- Update maintenance status
-- Close maintenance tickets
+### Kỹ Thuật Viên
+- Xem yêu cầu bảo trì
+- Xử lý và hoàn thành các tác vụ bảo trì
+- Cập nhật trạng thái bảo trì
+- Đóng phiếu bảo trì
 
-## Technology Stack
+## Công Nghệ Sử Dụng
 
-- **Frontend:** PyQt6 (GUI framework)
-- **Database:** SQLite3 (embedded database)
-- **Data Format:** JSON (for data import/export)
-- **Build Tool:** PyInstaller (for creating standalone executables)
-- **Language:** Python 3.8+
+- **Giao diện:** PyQt6 (framework GUI)
+- **Cơ sở dữ liệu:** SQLite3 (cơ sở dữ liệu nhúng)
+- **Định dạng dữ liệu:** JSON (để import/export dữ liệu)
+- **Công cụ biên dịch:** PyInstaller (tạo file thực thi độc lập)
+- **Ngôn ngữ:** Python 3.8+
 
-## Project Structure
+## Cấu Trúc Dự Án
 
 ```
 Business_device_management_system/
 ├── src/
-│   ├── base/           # Base classes and abstractions
-│   ├── database/       # Database connection and operations
-│   ├── entities/       # Data models (Device, Employee, Department, etc.)
-│   ├── manager/        # Business logic managers
+│   ├── base/           # Các lớp cơ sở và abstraction
+│   ├── database/       # Kết nối và thao tác cơ sở dữ liệu
+│   ├── entities/       # Mô hình dữ liệu (Device, Employee, Department, v.v.)
+│   ├── manager/        # Các manager xử lý logic nghiệp vụ
 │   │   ├── auth_manager.py
 │   │   ├── inventory.py
 │   │   ├── hr_manager.py
 │   │   ├── assignment_manager.py
 │   │   └── maintenance_manager.py
-│   ├── ui/             # PyQt6 UI components
+│   ├── ui/             # Các thành phần giao diện PyQt6
 │   │   ├── main_window.py
 │   │   ├── login_window.py
 │   │   ├── inventory_tab.py
 │   │   ├── hr_tab.py
 │   │   ├── assignment_tab.py
 │   │   └── maintenance_tab.py
-│   ├── utils/          # Utility functions and constants
-│   └── main.py         # Application entry point
-├── scripts/            # Build and installation scripts
-├── image/              # Application screenshots and diagrams
-├── uml_diagram/        # UML diagram source files
-├── requirement.txt     # Python dependencies
-└── README.md           # This file
+│   ├── utils/          # Các hàm tiện ích và hằng số
+│   └── main.py         # Điểm khởi đầu ứng dụng
+├── scripts/            # Script biên dịch và cài đặt
+├── image/              # Ảnh chụp màn hình và sơ đồ ứng dụng
+├── uml_diagram/        # File mã nguồn sơ đồ UML
+├── requirement.txt     # Các thư viện Python cần thiết
+└── README.md           # File này
 ```
 
-## UML Diagrams
+## Sơ Đồ UML
 
-The project includes comprehensive UML diagrams in the `image/` and `uml_diagram/` directories:
+Dự án bao gồm các sơ đồ UML chi tiết trong thư mục `image/` và `uml_diagram/`:
 
-- **Use Case Diagram** (`image/usecase.png`) - System functionality overview
-- **Class Diagram** (`image/class_diagram.png`) - System architecture
-- **Sequence Diagrams:**
-  - Assignment workflow (`image/assignment_sq_diagram.png`)
-  - Maintenance workflow (`image/maintanance_sq_diagram.png`)
-  - Device return workflow (`image/return_device_sq_diagram.png`)
+- **Sơ đồ Use Case** (`image/usecase.png`) - Tổng quan chức năng hệ thống
+- **Sơ đồ Class** (`image/class_diagram.png`) - Kiến trúc hệ thống
+- **Sơ đồ Sequence:**
+  - Quy trình phân công (`image/assignment_sq_diagram.png`)
+  - Quy trình bảo trì (`image/maintanance_sq_diagram.png`)
+  - Quy trình thu hồi thiết bị (`image/return_device_sq_diagram.png`)
 
-## Database
+## Cơ Sở Dữ Liệu
 
-The application uses SQLite3 for data persistence. The database file (`sharedatabase.db`) is automatically created in the `data/` directory on first run.
+Ứng dụng sử dụng SQLite3 để lưu trữ dữ liệu. File cơ sở dữ liệu (`sharedatabase.db`) được tự động tạo trong thư mục `data/` khi chạy lần đầu.
 
-### Database Location
+### Vị Trí Cơ Sở Dữ Liệu
 
-- **Running from source:** `data/sharedatabase.db` (in project root)
-- **Running from executable:** `data/sharedatabase.db` (next to the .exe file)
+- **Chạy từ mã nguồn:** `data/sharedatabase.db` (trong thư mục gốc dự án)
+- **Chạy từ file thực thi:** `data/sharedatabase.db` (bên cạnh file .exe)
 
-## Development
+## Phát Triển
 
-### Code Structure
+### Cấu Trúc Code
 
-The application follows a modular architecture:
+Ứng dụng tuân theo kiến trúc module:
 
-- **Entities:** Data models representing business objects
-- **Managers:** Business logic layer handling operations
-- **UI:** Presentation layer with PyQt6 components
-- **Database:** Data access layer for SQLite operations
-- **Utils:** Helper functions and constants
+- **Entities:** Các mô hình dữ liệu đại diện cho đối tượng nghiệp vụ
+- **Managers:** Lớp logic nghiệp vụ xử lý các thao tác
+- **UI:** Lớp hiển thị với các thành phần PyQt6
+- **Database:** Lớp truy cập dữ liệu cho thao tác SQLite
+- **Utils:** Các hàm hỗ trợ và hằng số
 
-### Adding New Features
+### Thêm Tính Năng Mới
 
-1. Define entities in `src/entities/`
-2. Implement business logic in appropriate manager (`src/manager/`)
-3. Create UI components in `src/ui/`
-4. Update database schema if needed
-5. Test with different user roles
+1. Định nghĩa entities trong `src/entities/`
+2. Triển khai logic nghiệp vụ trong manager phù hợp (`src/manager/`)
+3. Tạo các thành phần UI trong `src/ui/`
+4. Cập nhật schema cơ sở dữ liệu nếu cần
+5. Test với các vai trò người dùng khác nhau
 
-## Troubleshooting
+## Xử Lý Sự Cố
 
-### Application won't start
-- Ensure Python 3.8+ is installed
-- Verify all dependencies are installed: `pip install -r requirement.txt`
-- Check console output for error messages
+### Ứng dụng không khởi động
+- Đảm bảo Python 3.8+ đã được cài đặt
+- Xác minh tất cả các thư viện đã được cài đặt: `pip install -r requirement.txt`
+- Kiểm tra thông báo lỗi trong console
 
-### Database errors
-- Delete the `data/` directory to reset the database
-- Default accounts will be recreated on next launch
+### Lỗi cơ sở dữ liệu
+- Xóa thư mục `data/` để reset cơ sở dữ liệu
+- Các tài khoản mặc định sẽ được tạo lại khi khởi động lần tiếp theo
 
-### Build fails
-- Ensure PyInstaller is installed: `pip install pyinstaller`
-- Check that all paths in build scripts are correct
-- Review console output for specific errors
+### Biên dịch thất bại
+- Đảm bảo PyInstaller đã được cài đặt: `pip install pyinstaller`
+- Kiểm tra các đường dẫn trong script biên dịch là chính xác
+- Xem lại output console để biết lỗi cụ thể
 
-## License
+## Giấy Phép
 
-This project is available for educational and personal use.
+Dự án này có sẵn cho mục đích giáo dục và sử dụng cá nhân.
 
-## Contributing
+## Đóng Góp
 
-Contributions are welcome! Please feel free to submit issues and pull requests.
+Chúng tôi hoan nghênh các đóng góp! Vui lòng thoải mái gửi issues và pull requests.
 
-## Contact
+## Liên Hệ
 
-For questions or support, please open an issue on the GitHub repository.
+Nếu có câu hỏi hoặc cần hỗ trợ, vui lòng mở một issue trên repository GitHub.
