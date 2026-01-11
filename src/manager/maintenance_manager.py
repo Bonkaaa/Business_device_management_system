@@ -224,6 +224,16 @@ class MaintenanceManager:
             ticket = self._row_to_ticket(row)
             tickets.append(ticket)
         return tickets
+    
+    def get_tickets_by_reporter_id(self, reporter_id: str) -> list[MaintenanceTicket]:
+        query = "SELECT * FROM maintenance_tickets WHERE reporter_id = ?"
+        params = (reporter_id,)
+        rows = self.db_manager.fetch_all(query, params)
+        tickets = []
+        for row in rows:
+            ticket = self._row_to_ticket(row)
+            tickets.append(ticket)
+        return tickets
 
     def _row_to_ticket(self, row) -> MaintenanceTicket:
         device = self.inventory_manager.get_device_by_id(row['device_id'])

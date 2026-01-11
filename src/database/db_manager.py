@@ -87,6 +87,16 @@ class DatabaseManager:
             );
         """
 
+        query_accounts = """
+            CREATE TABLE IF NOT EXISTS accounts (
+                username TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL,
+                employee_id TEXT,
+                FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
+                );
+        """
+
         conn = self.get_connection()
         cursor = conn.cursor()
         cursor.execute(query_departments)
@@ -94,6 +104,7 @@ class DatabaseManager:
         cursor.execute(query_devices)
         cursor.execute(query_asssignments)
         cursor.execute(query_maintenance_tickets)
+        cursor.execute(query_accounts)
 
         conn.commit()
         conn.close()

@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QLocale
 from PyQt6.QtGui import QColor, QBrush, QFont
-from src.utils.constant_class import MaintenanceStatus, DeviceStatus
+from src.utils.constant_class import MaintenanceStatus, DeviceStatus, UserRole
 
 # === 1. Popup Chi tiết Phiếu Bảo Trì ===
 class MaintenanceDetailDialog(QDialog):
@@ -60,11 +60,12 @@ class MaintenanceDetailDialog(QDialog):
 
 # === 2. Tab Maintenance Chính ===
 class MaintenanceTab(QWidget):
-    def __init__(self, maintenance_manager, inventory_manager, hr_manager):
+    def __init__(self, maintenance_manager, inventory_manager, hr_manager, current_user):
         super().__init__()
         self.maintenance_manager = maintenance_manager
         self.inventory_manager = inventory_manager
         self.hr_manager = hr_manager
+        self.current_user = current_user
         self.all_tickets = []
         self.init_ui()
     
@@ -138,7 +139,14 @@ class MaintenanceTab(QWidget):
 
     def load_data(self):
         try:
-            self.all_tickets = self.maintenance_manager.get_all_tickets()
+            if self.current_user['role'] == UserRole.EMPLOYEE.value:
+                emp_id = self.current_user.get('employee_id', None)
+                if emp_id:
+                    self.all_tickets = self.maintenance_manager.get_tickets_by_reporter_id(emp_id)
+                else:
+                    self.all_tickets = []
+            else:
+                self.all_tickets = self.maintenance_manager.get_all_tickets()
             self.apply_filters()
         except Exception as e:
             QMessageBox.critical(self, "Lỗi", f"Không thể tải dữ liệu: {e}")
@@ -321,4 +329,5 @@ class CloseTicketDialog(QDialog):
         layout.addWidget(self.chk_repaired)
         layout.addWidget(btn)
         self.setLayout(layout)
-    def get_result(self): return self.chk_repaired.isChecked()
+    def get_result(self): 
+        return self.chk_repaired.isChecked()

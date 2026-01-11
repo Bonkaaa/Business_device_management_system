@@ -188,6 +188,17 @@ class AssignmentManager:
             return None
         return self._row_to_assignment(row)
     
+    def get_all_assignments_by_assignee_id(self, assignee_id: str) -> list[Assignment]:
+        query = "SELECT * FROM assignments WHERE assignee_id = ?"
+        params = (assignee_id,)
+        rows = self.db_manager.fetch_all(query, params)
+
+        assignments = []
+        for row in rows:
+            assignment = self._row_to_assignment(row)
+            assignments.append(assignment)
+        return assignments
+    
     def get_active_assignment_by_assignee_id(self, assignee_id: str) -> list[Assignment] | None:
         query = "SELECT * FROM assignments WHERE assignee_id = ? AND status = ?"
         params = (assignee_id, AssignmentStatus.OPEN.value)

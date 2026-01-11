@@ -304,6 +304,7 @@ class InventoryTab(QWidget):
                     self.inventory_manager.assignment_manager.close_assignment(
                         assignment_id=assignment.get_id(),
                         return_quality_status=DeviceQualityStatus.RETIRED,
+                        actual_return_date=datetime.now().isoformat(),
                         broken_status=True
                     )
                 # Finally, remove device from database

@@ -1,3 +1,4 @@
+# File: src/ui/assignment_tab.py
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem, 
     QPushButton, QHeaderView, QAbstractItemView, QMessageBox, 
@@ -6,7 +7,7 @@ from PyQt6.QtWidgets import (
 from datetime import datetime
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont
-from src.utils.constant_class import AssignmentStatus, DeviceQualityStatus
+from src.utils.constant_class import AssignmentStatus, DeviceQualityStatus, UserRole
 
 # === 1. Popup Chi tiết Phiếu Giao ===
 class AssignmentDetailDialog(QDialog):
@@ -21,7 +22,6 @@ class AssignmentDetailDialog(QDialog):
         group = QGroupBox("Thông tin phiếu giao/trả")
         form = QFormLayout()
 
-        # Xử lý lấy tên (Sửa lỗi .name thay vì .get_name())
         dev_name = ass.get_device().name if ass.get_device() else "N/A"
         dev_id = ass.get_device().get_id() if ass.get_device() else "N/A"
         dev_display = f"{dev_name} ({dev_id})"
@@ -36,7 +36,6 @@ class AssignmentDetailDialog(QDialog):
         form.addRow("<b>Thiết bị:</b>", QLabel(dev_display)) 
         form.addRow("<b>Trạng thái:</b>", QLabel(status_str))
         
-        # Ngày tháng
         init_date = ass.get_initial_date().strftime("%d/%m/%Y") if ass.get_initial_date() else "N/A"
         exp_date = ass.get_expected_return_date().strftime("%d/%m/%Y") if ass.get_expected_return_date() else "N/A"
         act_date = ass.get_actual_return_date().strftime("%d/%m/%Y") if ass.get_actual_return_date() else "Chưa trả"
@@ -56,13 +55,16 @@ class AssignmentDetailDialog(QDialog):
 # === 2. Tab Assignment Chính ===
 class AssignmentTab(QWidget):
     data_changed = pyqtSignal()
-    def __init__(self, assignment_manager, inventory_manager, hr_manager):
+    def __init__(self, assignment_manager, inventory_manager, hr_manager, current_user):
         super().__init__()
         self.assignment_manager = assignment_manager
         self.inventory_manager = inventory_manager
         self.hr_manager = hr_manager
+        self.current_user = current_user
         self.all_assignments = []
         self.init_ui()
+
+        self.apply_role_permissions()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -76,13 +78,11 @@ class AssignmentTab(QWidget):
         self.btn_create.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 5px 15px;")
         self.btn_return.setStyleSheet("background-color: #f44336; color: white; font-weight: bold; padding: 5px 15px;")
         
-        self.check_show_all = QCheckBox("Hiển thị cả phiếu đã đóng")
-        self.check_show_all.stateChanged.connect(self.load_data)
+        # [ĐÃ XÓA] Checkbox "Hiển thị cả phiếu đã đóng"
 
         toolbar.addWidget(self.btn_load)
         toolbar.addWidget(self.btn_create)
         toolbar.addWidget(self.btn_return)
-        toolbar.addWidget(self.check_show_all)
         toolbar.addStretch()
         layout.addLayout(toolbar)
 
@@ -95,7 +95,8 @@ class AssignmentTab(QWidget):
 
         self.combo_status = QComboBox()
         self.combo_status.setFixedHeight(30)
-        self.combo_status.addItems(["-- Trạng thái --", AssignmentStatus.OPEN.value, AssignmentStatus.OVERDUE.value, AssignmentStatus.CLOSED.value])
+        # Thêm các tùy chọn lọc
+        self.combo_status.addItems(["-- Tất cả trạng thái --", AssignmentStatus.OPEN.value, AssignmentStatus.OVERDUE.value, AssignmentStatus.CLOSED.value])
         self.combo_status.currentTextChanged.connect(self.apply_filters)
 
         filter_bar.addWidget(QLabel("Tìm kiếm:"))
@@ -104,7 +105,7 @@ class AssignmentTab(QWidget):
         filter_bar.addWidget(self.combo_status, 1)
         layout.addLayout(filter_bar)
 
-        # --- Table (Làm gọn 4 cột chính) ---
+        # --- Table ---
         self.table = QTableWidget()
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(["Mã Phiếu", "Đối Tượng", "Thiết Bị", "Trạng Thái"])
@@ -127,15 +128,37 @@ class AssignmentTab(QWidget):
         layout.addWidget(self.table)
         layout.addWidget(QLabel("<i>* Nhấp đúp vào một dòng để xem chi tiết thời hạn và lịch sử trả.</i>"))
         self.setLayout(layout)
+        
+        # Gọi load_data ngay khi khởi tạo xong
         self.load_data()
+
+    def apply_role_permissions(self):
+        # Nếu là nhân viên -> Ẩn nút tạo và trả
+        if self.current_user['role'] == UserRole.EMPLOYEE.value:
+            self.btn_create.hide()
+            self.btn_return.hide()
 
     def load_data(self):
         try:
-            if self.check_show_all.isChecked():
-                self.all_assignments = self.assignment_manager.get_all_assignments()
+            is_employee = self.current_user['role'] == UserRole.EMPLOYEE.value
+            emp_id = self.current_user.get('employee_id', None)
+            
+            # [SỬA LOGIC] Luôn lấy toàn bộ danh sách (cả cũ và mới)
+            # Bộ lọc ComboBox sẽ lo việc hiển thị cái gì
+            if is_employee and emp_id:
+                # Lấy tất cả phiếu của nhân viên này
+                # Lưu ý: Cần đảm bảo AssignmentManager có hàm get_assignments_by_assignee_id hoặc get_all_assignments_by_assignee_id trả về list
+                self.all_assignments = self.assignment_manager.get_assignments_by_assignee_id(emp_id)
             else:
-                self.all_assignments = self.assignment_manager.get_active_assignments()
+                # Lấy tất cả phiếu hệ thống
+                self.all_assignments = self.assignment_manager.get_all_assignments()
+
+            if self.all_assignments is None:
+                self.all_assignments = []
+
+            # [FIX QUAN TRỌNG] Phải gọi hàm này để vẽ dữ liệu lên bảng
             self.apply_filters()
+
         except Exception as e:
             QMessageBox.critical(self, "Lỗi", f"Không thể tải dữ liệu: {e}")
 
@@ -147,7 +170,6 @@ class AssignmentTab(QWidget):
         self.table.setRowCount(0)
 
         for ass in self.all_assignments:
-            # Sửa lỗi: lấy đúng thuộc tính .name từ class Device và Employee/Dept
             assignee_name = ass.get_assignee().name if ass.get_assignee() else "N/A"
             device_name = ass.get_device().name if ass.get_device() else "N/A"
             
@@ -157,7 +179,9 @@ class AssignmentTab(QWidget):
             match_search = (search_text in ass.get_id().lower() or 
                             search_text in assignee_name.lower() or 
                             search_text in device_name.lower())
-            match_status = (status_filter == "-- Trạng thái --" or status_filter == status_str)
+            
+            # Logic lọc trạng thái
+            match_status = (status_filter == "-- Tất cả trạng thái --" or status_filter == status_str)
 
             if match_search and match_status:
                 self.add_row(ass, assignee_name, device_name, status_str)
@@ -180,7 +204,7 @@ class AssignmentTab(QWidget):
             item_status.setBackground(QBrush(QColor(255, 255, 224)))  # Light yellow
             item_status.setForeground(QBrush(QColor(0, 0, 0))) 
         else:
-            item_status.setBackground(QBrush(QColor("#646464")))
+            item_status.setBackground(QBrush(QColor("#e0e0e0"))) # Xám cho đã đóng
             item_status.setForeground(QBrush(QColor(0, 0, 0)))
             
         self.table.setItem(row, 3, item_status)
@@ -204,7 +228,6 @@ class AssignmentTab(QWidget):
         if dialog.exec():
             data = dialog.get_data()
             try:
-                # Lấy quality từ thiết bị được chọn
                 quality_status = data["device"].get_quality_status()
                 self.assignment_manager.create_assignment(
                     device=data["device"],
@@ -213,7 +236,6 @@ class AssignmentTab(QWidget):
                     quality_status=quality_status
                 )
                 self.load_data()
-
                 self.data_changed.emit()
                 QMessageBox.information(self, "Thành Công", "Đã giao thiết bị.")
             except Exception as e:
@@ -243,13 +265,12 @@ class AssignmentTab(QWidget):
                     actual_return_date=data["actual_return_date"]
                 )
                 self.load_data()
-
                 self.data_changed.emit()
                 QMessageBox.information(self, "Thành Công", "Đã nhận lại thiết bị.")
             except Exception as e:
                 QMessageBox.critical(self, "Lỗi", str(e))
 
-# === 3. Các Dialogs (Đã dọn dẹp code rác) ===
+# === 3. Các Dialogs ===
 
 class CreateAssignmentDialog(QDialog):
     def __init__(self, devices, employees, departments, parent=None):
@@ -332,7 +353,6 @@ class ReturnAssignmentDialog(QDialog):
         layout.addRow(self.return_date_today)
         layout.addRow(self.return_date_container)
         
-
         # Buttons
         btn_box = QHBoxLayout()
         btn_ok = QPushButton("Xác Nhận")

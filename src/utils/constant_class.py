@@ -23,7 +23,10 @@ class MaintenanceStatus(Enum):
     RESOLVED = "Đã giải quyết"
     CLOSED = "Đóng"
 
-        
+class UserRole(Enum):
+    ADMIN = "Quản trị viên"
+    TECHNICIAN = "Kỹ thuật viên"
+    EMPLOYEE = "Nhân viên"
         
 
 
