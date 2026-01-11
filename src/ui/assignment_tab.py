@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 from datetime import datetime
 from PyQt6.QtCore import Qt, QDate, pyqtSignal
 from PyQt6.QtGui import QColor, QBrush, QFont
-from src.utils.constant_class import AssignmentStatus, DeviceQualityStatus, UserRole
+from utils.constant_class import AssignmentStatus, DeviceQualityStatus, UserRole
 
 # === 1. Popup Chi tiết Phiếu Giao ===
 class AssignmentDetailDialog(QDialog):

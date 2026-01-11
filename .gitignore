@@ -3,3 +3,6 @@
 __pycache__
 data
 sql.py
+build
+dist
+DeviceManager.spec

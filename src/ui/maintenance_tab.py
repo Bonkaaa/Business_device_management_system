@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QLocale
 from PyQt6.QtGui import QColor, QBrush, QFont
-from src.utils.constant_class import MaintenanceStatus, DeviceStatus, UserRole
+from utils.constant_class import MaintenanceStatus, DeviceStatus, UserRole
 
 # === 1. Popup Chi tiết Phiếu Bảo Trì ===
 class MaintenanceDetailDialog(QDialog):

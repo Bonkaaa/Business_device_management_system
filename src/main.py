@@ -14,12 +14,26 @@ def main():
     print("Đang khởi động ứng dụng Quản lý Thiết bị CNTT...")
     app = QApplication(sys.argv)
 
+    # Xác định đường dẫn thư mục data và tạo nếu chưa có
+    if getattr(sys, 'frozen', False):
+        # Chạy từ file .exe (PyInstaller)
+        base_dir = os.path.dirname(sys.executable)
+    else:
+        # Chạy từ Python script
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    data_dir = os.path.join(base_dir, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    
+    db_path = os.path.join(data_dir, "sharedatabase.db")
+    print(f"Database path: {db_path}")
+
     # Thiết lập cơ sở dữ liệu và tạo tài khoản admin mặc định nếu cần
-    auth_manager = AuthManager(db_path="data/sharedatabase.db")
-    hr_manager = HRManager(db_path="data/sharedatabase.db")
-    inventory_manager = Inventory(db_path="data/sharedatabase.db")
-    assignment_manager = AssignmentManager(db_path="data/sharedatabase.db")
-    maintenance_manager = MaintenanceManager(db_path="data/sharedatabase.db")
+    auth_manager = AuthManager(db_path=db_path)
+    hr_manager = HRManager(db_path=db_path)
+    inventory_manager = Inventory(db_path=db_path)
+    assignment_manager = AssignmentManager(db_path=db_path)
+    maintenance_manager = MaintenanceManager(db_path=db_path)
 
     # Thiết lập tham chiếu chéo giữa các manager
     hr_manager.set_managers(inventory_manager, assignment_manager)

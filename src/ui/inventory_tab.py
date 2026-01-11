@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QColor, QBrush, QFont
 from PyQt6.QtCore import Qt
-from src.utils.constant_class import DeviceStatus, DeviceQualityStatus
+from utils.constant_class import DeviceStatus, DeviceQualityStatus
 from datetime import datetime
 
 from utils.validators import DeviceValidator
