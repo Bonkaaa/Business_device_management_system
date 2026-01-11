@@ -111,13 +111,17 @@ class AssignmentTab(QWidget):
         self.table.setHorizontalHeaderLabels(["Mã Phiếu", "Đối Tượng", "Thiết Bị", "Trạng Thái"])
         
         font = QFont()
-        font.setPointSize(10)
+        font.setPointSize(11)
         self.table.setFont(font)
         self.table.verticalHeader().setDefaultSectionSize(38)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSortingEnabled(True)
+
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        header.setStyleSheet("font-weight: bold;")
         
         # Sự kiện
         self.btn_load.clicked.connect(self.load_data)

@@ -8,6 +8,8 @@ from PyQt6.QtCore import Qt
 from src.utils.constant_class import DeviceStatus, DeviceQualityStatus
 from datetime import datetime
 
+from utils.validators import DeviceValidator
+
 # --- Class Popup xem chi tiết thiết bị ---
 class DeviceDetailDialog(QDialog):
     def __init__(self, device, parent=None):
@@ -318,25 +320,33 @@ class AddDeviceDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Thêm thiết bị mới")
-        self.setFixedSize(350, 250)
+        self.setFixedSize(450, 200)
         self.setModal(True)
         self.init_ui()
 
     def init_ui(self):
         layout = QFormLayout()
         self.input_name = QLineEdit()
+        self.input_name.setPlaceholderText("Ví dụ: Laptop Dell XPS 13")
+
         self.input_category = QLineEdit()
+        self.input_category.setPlaceholderText("Ví dụ: Laptop, Điện thoại, Máy in...")
+
         self.input_purchase_date = QLineEdit()
+        self.input_purchase_date.setPlaceholderText("Định dạng: YYYY-MM-DD")
+
         self.input_specifications = QLineEdit()
+        self.input_specifications.setPlaceholderText('Ví dụ: {"CPU": "Intel i7", "RAM": "16GB"}')
+
 
         layout.addRow("Tên Thiết bị:", self.input_name)
         layout.addRow("Loại Thiết bị:", self.input_category)
-        layout.addRow("Ngày Mua (YYYY-MM-DD):", self.input_purchase_date)
+        layout.addRow("Ngày Mua:", self.input_purchase_date)
         layout.addRow("Thông số Kỹ thuật (JSON):", self.input_specifications)
 
         btn_box = QHBoxLayout()
         btn_save = QPushButton("Lưu")
-        btn_save.clicked.connect(self.accept)
+        btn_save.clicked.connect(self.handle_save)
         btn_cancel = QPushButton("Hủy")
         btn_cancel.clicked.connect(self.reject)
         btn_box.addWidget(btn_save)
@@ -351,3 +361,22 @@ class AddDeviceDialog(QDialog):
             'purchase_date': self.input_purchase_date.text(),
             'specifications': self.input_specifications.text(),
         }
+    
+    def handle_save(self):
+        name = self.input_name.text().strip()
+        category = self.input_category.text().strip()
+        purchase_date = self.input_purchase_date.text().strip()
+        specifications = self.input_specifications.text().strip()
+
+        valid = DeviceValidator.validate_device_input(
+            name=name,
+            category=category,
+            purchase_date=purchase_date,
+            specifications=specifications
+        )
+
+        if valid is not True:
+            QMessageBox.warning(self, "Lỗi khi nhập dữ liệu", valid)
+            return
+        
+        self.accept()

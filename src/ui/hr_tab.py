@@ -8,6 +8,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QColor, QBrush
 
 from utils.constant_class import DeviceQualityStatus, DeviceStatus
+from utils.validators import DepartmentValidator, EmployeeValidator
 
 # === 1. Popup Chi tiết Nhân viên ===
 class EmployeeDetailDialog(QDialog):
@@ -114,7 +115,7 @@ class EmployeesSubTab(QWidget):
         
         # UI Table
         font = QFont()
-        font.setPointSize(10)
+        font.setPointSize(11)
         self.table.setFont(font)
         self.table.verticalHeader().setDefaultSectionSize(35)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -122,6 +123,9 @@ class EmployeesSubTab(QWidget):
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSortingEnabled(True)
         self.table.cellDoubleClicked.connect(self.show_employee_details)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        header.setStyleSheet("font-weight: bold;")
         
         layout.addWidget(self.table)
         layout.addWidget(QLabel("<i>* Nhấp đúp vào một dòng để xem chi tiết đầy đủ của thiết bị.</i>"))
@@ -285,7 +289,7 @@ class DepartmentsSubTab(QWidget):
         self.table.setHorizontalHeaderLabels(["ID", "Tên Phòng", "Quản lý", "Địa điểm"])
         
         font = QFont()
-        font.setPointSize(10)
+        font.setPointSize(11)
         self.table.setFont(font)
         self.table.verticalHeader().setDefaultSectionSize(35)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -293,6 +297,9 @@ class DepartmentsSubTab(QWidget):
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSortingEnabled(True)
         self.table.cellDoubleClicked.connect(self.show_dept_details)
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        header.setStyleSheet("font-weight: bold;")
 
         layout.addWidget(self.table)
         layout.addWidget(QLabel("<i>* Nhấp đúp vào một dòng để xem chi tiết đầy đủ của thiết bị.</i>"))
@@ -434,29 +441,61 @@ class AddDepartmentDialog(QDialog):
         self.setWindowTitle("Thêm Phòng Ban Mới")
         self.setFixedSize(350, 200)
         layout = QFormLayout()
+
         self.name = QLineEdit()
+        self.name.setPlaceholderText("Tên phòng ban")
+
         self.location = QLineEdit()
+        self.location.setPlaceholderText("Địa điểm phòng ban")
+
         layout.addRow("Tên Phòng Ban:", self.name)
         layout.addRow("Địa Điểm:", self.location)
         btn_box = QHBoxLayout()
         btn_save = QPushButton("Lưu")
-        btn_save.clicked.connect(self.accept)
+        btn_save.clicked.connect(self.handle_save)
         btn_cancel = QPushButton("Hủy")
         btn_cancel.clicked.connect(self.reject)
         btn_box.addWidget(btn_save); btn_box.addWidget(btn_cancel)
         layout.addRow(btn_box)
         self.setLayout(layout)
+
     def get_data(self):
         return {"name": self.name.text(), "location": self.location.text()}
+    
+    def handle_save(self):
+        name = self.name.text().strip()
+        location = self.location.text().strip()
+
+        valid_name = DepartmentValidator.validate_department_input(
+            name=name,
+            location=location
+        )
+
+        if valid_name is not True:
+            QMessageBox.warning(self, "Lỗi", valid_name)
+            return
+
+        self.accept()
 
 class AddEmployeeDialog(QDialog):
     def __init__(self, parent = None, departments = None):
         super().__init__(parent)
         self.setWindowTitle("Thêm Nhân Viên Mới")
-        self.setFixedSize(350, 250)
+        self.setFixedSize(350, 200)
         layout = QFormLayout()
-        self.name = QLineEdit(); self.email = QLineEdit()
-        self.phone_number = QLineEdit(); self.position = QLineEdit()
+
+        self.name = QLineEdit()
+        self.name.setPlaceholderText("Họ và tên đầy đủ")
+
+        self.email = QLineEdit()
+        self.email.setPlaceholderText("Ví dụ: abc@gmail.com")
+
+        self.phone_number = QLineEdit()
+        self.phone_number.setPlaceholderText("Ví dụ: 0123456789")
+
+        self.position = QLineEdit()
+        self.position.setPlaceholderText("Chức vụ trong công ty")
+
         self.department_combo = QComboBox()
         self.departments = departments if departments else []
         for dept in self.departments: self.department_combo.addItem(dept.get_name())
@@ -466,11 +505,14 @@ class AddEmployeeDialog(QDialog):
         layout.addRow("Chức Vụ:", self.position)
         layout.addRow("Phòng Ban:", self.department_combo)
         btn_box = QHBoxLayout()
-        btn_save = QPushButton("Lưu"); btn_save.clicked.connect(self.accept)
-        btn_cancel = QPushButton("Hủy"); btn_cancel.clicked.connect(self.reject)
+        btn_save = QPushButton("Lưu")
+        btn_save.clicked.connect(self.handle_save)
+        btn_cancel = QPushButton("Hủy")
+        btn_cancel.clicked.connect(self.reject)
         btn_box.addWidget(btn_save); btn_box.addWidget(btn_cancel)
         layout.addRow(btn_box)
         self.setLayout(layout)
+
     def get_data(self):
         idx = self.department_combo.currentIndex()
         return {
@@ -478,6 +520,25 @@ class AddEmployeeDialog(QDialog):
             "phone_number": self.phone_number.text(), "position": self.position.text(),
             "department_id": self.departments[idx].get_id() if idx >=0 else None
         }
+    
+    def handle_save(self):
+        name = self.name.text().strip()
+        email = self.email.text().strip()
+        phone = self.phone_number.text().strip()
+        position = self.position.text().strip()
+
+        valid = EmployeeValidator.validate_employee_input(
+            name=name,
+            email=email,
+            phone=phone,
+            position=position
+        )
+
+        if valid is not True:
+            QMessageBox.warning(self, "Lỗi", valid)
+            return
+
+        self.accept()
     
 class AssignManagerDialog(QDialog):
     def __init__(self, department, parent=None, employees=None):
