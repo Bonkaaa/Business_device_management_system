@@ -28,8 +28,8 @@ class Inventory:
         spec_json = json.dumps(specifications)
 
         query = """
-        INSERT INTO devices (device_id, name, category, status, quality_status, purchase_date, assigned_to, specifications)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO devices (device_id, name, category, status, quality_status, purchase_date, specifications)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         params = (
             device_id,
@@ -38,20 +38,9 @@ class Inventory:
             DeviceStatus.AVAILABLE.value,
             DeviceQualityStatus.GOOD.value,
             purchase_date,
-            None,
             spec_json,
         )
         self.db_manager.execute_query(query, params)
-
-        return Device(
-            device_id=device_id,
-            name=name,
-            category=category,
-            status=DeviceStatus.AVAILABLE,
-            purchase_date=purchase_date,
-            assigned_to=None,
-            specifications=specifications,
-        )
     
     def remove_device(self, device_id: str) -> None:
         query = "DELETE FROM devices WHERE device_id = ?"
@@ -72,8 +61,8 @@ class Inventory:
                 category=row['category'],
                 status=DeviceStatus(row['status']),
                 purchase_date=row['purchase_date'],
-                assigned_to=row['assigned_to'],
                 specifications=specifications,
+                assignment_manager=self.assignment_manager,
             )
             devices.append(device)
         return devices
@@ -91,8 +80,8 @@ class Inventory:
                 category=row['category'],
                 status=DeviceStatus(row['status']),
                 purchase_date=row['purchase_date'],
-                assigned_to=row['assigned_to'],
                 specifications=specifications,
+                assignment_manager=self.assignment_manager,
             )
         return None
     
@@ -110,8 +99,8 @@ class Inventory:
                 category=row['category'],
                 status=DeviceStatus(row['status']),
                 purchase_date=row['purchase_date'],
-                assigned_to=row['assigned_to'],
                 specifications=spec,
+                assignment_manager=self.assignment_manager,
             )
             devices.append(device)
 
@@ -131,8 +120,8 @@ class Inventory:
                 category=row['category'],
                 status=DeviceStatus(row['status']),
                 purchase_date=row['purchase_date'],
-                assigned_to=row['assigned_to'],
                 specifications=spec,
+                assignment_manager=self.assignment_manager,
             )
             devices.append(device)
 
@@ -159,18 +148,14 @@ class Inventory:
         for row in rows:
             spec = json.loads(row['specifications'])
 
-            assignee = None
-            if row['assigned_to'] and self.hr_manager:
-                assignee = self.hr_manager.get_assignee_by_id(row['assigned_to'])
-
             device = Device(
                 device_id=row['device_id'],
                 name=row['name'],
                 category=row['category'],
                 status=DeviceStatus(row['status']),
                 purchase_date=row['purchase_date'],
-                assigned_to=assignee if row['assigned_to'] else None,
                 specifications=spec,
+                assignment_manager=self.assignment_manager,
             )
             if row['quality_status']:
                 device.update_quality_status(DeviceQualityStatus(row['quality_status']))
@@ -178,20 +163,45 @@ class Inventory:
 
         return devices
     
-    def update_device_status_and_assignee(
+    def update_device_status(
         self,
         device_id: str,
         new_status: DeviceStatus,
-        new_assignee_id: str | None = None,
+    ) -> None:
+        query = """
+            UPDATE devices
+            SET status = ?
+            WHERE device_id = ?
+        """
+        params = (new_status.value, device_id)
+        self.db_manager.execute_query(query, params)
+
+    def update_device_and_quality_status(
+        self,
+        device_id: str,
+        new_status: DeviceStatus,
+        new_quality_status: DeviceQualityStatus,
     ) -> None:
         query = """
         UPDATE devices
-        SET status = ?, assigned_to = ?
+        SET status = ?, quality_status = ?
         WHERE device_id = ?
         """
-        params = (new_status.value, new_assignee_id, device_id)
+        params = (new_status.value, new_quality_status.value, device_id)
         self.db_manager.execute_query(query, params)
 
-    
+    def get_devices_by_assignee_id(self, assignee_id: str) -> list[Device]:
+        # Get assignments from AssignmentManager
+        assignments = self.assignment_manager.get_all_assignments_by_assignee_id(assignee_id)
 
+        devices = []
+
+        for assignment in assignments:
+            device = self.get_device_by_id(assignment.get_device().get_id())
+            if device:
+                devices.append(device)
+        return devices
+        
+
+        
         

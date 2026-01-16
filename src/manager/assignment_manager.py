@@ -37,38 +37,21 @@ class AssignmentManager:
 
         device_id = device.get_id()
         assignee_id = assignee.get_id()
+        assignee_type = assignee.get_assignee_type()
         expected_return_date_str = expected_return_date.isoformat() if expected_return_date else None
 
-        current_assignee_devices = assignee.get_assigned_devices()
-        current_assignee_devices.append(f"{device.get_id()}-{device.name}")
-        current_assignee_devices_str = ",".join(current_assignee_devices)
-
-        # Check if assignee is employee or department to handle assigned_devices properly
-        if assignee_id.startswith("EMP"):
-            flag_employee = True
+        if assignee_type == "Department":
+            query_insert = """
+                INSERT INTO assignments (
+                    assignment_id, initial_date, expected_return_date, actual_return_date, status, quality_status, notes, device_id, device_name, assignee_department_id, assignee_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
         else:
-            flag_employee = False
-
-
-        query_insert = """
-            INSERT INTO assignments (
-                assignment_id, initial_date, expected_return_date, actual_return_date, status, quality_status, notes, device_id, device_name, assignee_id, assignee_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """
-
-        query_update_device = """
-            UPDATE devices
-            SET status = ?, assigned_to = ?
-            WHERE device_id = ?
-        """
-
-        table_name = "employees" if flag_employee else "departments"
-        id = "employee_id" if flag_employee else "department_id"
-        query_update_assignee = f"""
-            UPDATE {table_name}
-            SET assigned_devices =  ?
-            WHERE {id} = ?
-        """
+            query_insert = """
+                INSERT INTO assignments (
+                    assignment_id, initial_date, expected_return_date, actual_return_date, status, quality_status, notes, device_id, device_name, assignee_employee_id, assignee_name
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
 
         try:
             conn = self.db_manager.get_connection()
@@ -89,25 +72,11 @@ class AssignmentManager:
                 assignee.name,
             ))
 
-            # Update device status and assigned_to
-            cursor.execute(query_update_device, (
-                DeviceStatus.ASSIGNED.value,
-                assignee_id,
-                device_id
-            ))
-
-            # Update assignee's assigned devices
-            cursor.execute(query_update_assignee, (
-                current_assignee_devices_str,
-                assignee_id
-            ))
-
             conn.commit()
             conn.close()
-
             
-            device.update_device_status(DeviceStatus.ASSIGNED)
-            device.update_assigned_to(assignee.name)
+            # Update device status
+            assignee.assign_device(device)
 
             return Assignment(
                 assignment_id=assignment_id,
@@ -135,20 +104,16 @@ class AssignmentManager:
     ):
         actual_return_date_str = actual_return_date
 
+        assignment = self.get_assignment_by_id(assignment_id)
+        assignee = assignment.get_assignee()
+        device = assignment.get_device()
+
         new_device_status = DeviceStatus.OUT_OF_SERVICE if broken_status else DeviceStatus.AVAILABLE
 
         query_update_assignment = """
             UPDATE assignments
             SET quality_status = ?, actual_return_date = ?, status = ?, notes = notes || ?
             WHERE assignment_id = ?
-        """
-
-        query_update_device = """
-            UPDATE devices
-            SET status = ?, assigned_to = ?, quality_status = ?
-            WHERE device_id = (
-                SELECT device_id FROM assignments WHERE assignment_id = ?
-            )
         """
 
         note_append = f"[Đóng] Trả vào ngày {actual_return_date}, tình trạng: {return_quality_status.value}.\n"
@@ -166,15 +131,15 @@ class AssignmentManager:
                 assignment_id
             ))
 
-            # Update device
-            cursor.execute(query_update_device, (
-                new_device_status.value,
-                None,
-                return_quality_status.value,
-                assignment_id
-            ))
             conn.commit()
             conn.close()
+
+            # Update device
+            assignee.unassign_device(
+                device=device,
+                return_quality_status=return_quality_status, 
+                device_status=new_device_status
+            )
         except Exception as e:
             print(f"Lỗi khi đóng assignment: {e}")
         
@@ -189,10 +154,16 @@ class AssignmentManager:
         return self._row_to_assignment(row)
     
     def get_all_assignments_by_assignee_id(self, assignee_id: str) -> list[Assignment]:
-        query = "SELECT * FROM assignments WHERE assignee_id = ?"
+        assignee = self.hr_manager.get_assignee_by_id(assignee_id)
+
+        assignee_type = assignee.get_assignee_type()
+        
+        if assignee_type == "Department":
+            query = "SELECT * FROM assignments WHERE assignee_department_id = ?"
+        else:
+            query = "SELECT * FROM assignments WHERE assignee_employee_id = ?"
         params = (assignee_id,)
         rows = self.db_manager.fetch_all(query, params)
-
         assignments = []
         for row in rows:
             assignment = self._row_to_assignment(row)
@@ -200,7 +171,13 @@ class AssignmentManager:
         return assignments
     
     def get_active_assignment_by_assignee_id(self, assignee_id: str) -> list[Assignment] | None:
-        query = "SELECT * FROM assignments WHERE assignee_id = ? AND status = ?"
+        assignee = self.hr_manager.get_assignee_by_id(assignee_id)
+        assignee_type = assignee.get_assignee_type()
+        
+        if assignee_type == "Department":
+            query = "SELECT * FROM assignments WHERE assignee_department_id = ? AND status = ?"
+        else:
+            query = "SELECT * FROM assignments WHERE assignee_employee_id = ? AND status = ?"
         params = (assignee_id, AssignmentStatus.OPEN.value)
         rows = self.db_manager.fetch_all(query, params)
 
@@ -269,7 +246,10 @@ class AssignmentManager:
     def _row_to_assignment(self, row) -> Assignment:
         device = self.inventory_manager.get_device_by_id(row['device_id'])
         
-        assignee = self.hr_manager.get_assignee_by_id(row['assignee_id'])
+        if row['assignee_department_id']:
+            assignee = self.hr_manager.get_assignee_by_id(row['assignee_department_id'])
+        else:
+            assignee = self.hr_manager.get_assignee_by_id(row['assignee_employee_id'])
         
         init_date = datetime.fromisoformat(row['initial_date'])
         expected_return_date = datetime.fromisoformat(row['expected_return_date']) if row['expected_return_date'] else None

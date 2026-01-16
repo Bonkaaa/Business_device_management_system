@@ -31,13 +31,7 @@ class DeviceDetailDialog(QDialog):
         status_info = self.device.get_status()
         status_str = status_info['status'].value if hasattr(status_info['status'], 'value') else str(status_info['status'])
         quality_str = self.device.get_quality_status().value if hasattr(self.device.get_quality_status(), 'value') else str(self.device.get_quality_status())
-        assigned_to = status_info.get('assigned_to') or "Chưa được giao"
-        if assigned_to != "Chưa được giao":
-            assigned_to_name = assigned_to.name
-            assigned_to_id = assigned_to.get_id()
-            assigned_to_display = f"{assigned_to_name} ({assigned_to_id})"
-        else:
-            assigned_to_display = "Chưa được giao"
+        assigned_to = self.device.get_assignee()
 
         form.addRow("<b>Mã thiết bị:</b>", QLabel(self.device.get_id()))
         form.addRow("<b>Tên thiết bị:</b>", QLabel(self.device.name))
@@ -45,7 +39,7 @@ class DeviceDetailDialog(QDialog):
         form.addRow("<b>Trạng thái:</b>", QLabel(status_str))
         form.addRow("<b>Chất lượng:</b>", QLabel(quality_str))
         form.addRow("<b>Ngày mua:</b>", QLabel(self.device.get_purchase_date()))
-        form.addRow("<b>Người sử dụng:</b>", QLabel(assigned_to_display))
+        form.addRow("<b>Người sử dụng:</b>", QLabel(assigned_to.name if assigned_to else "Chưa được giao"))
         
         group_basic.setLayout(form)
         layout.addWidget(group_basic)
@@ -197,12 +191,11 @@ class InventoryTab(QWidget):
             
             status_info = device.get_status()
             d_status = status_info['status'].value if hasattr(status_info['status'], 'value') else str(status_info['status'])
-            assigned_to = str(status_info.get('assigned_to') or "Chưa được giao").lower()
             
             quality_val = device.get_quality_status()
             d_quality = quality_val.value if hasattr(quality_val, 'value') else str(quality_val)
 
-            match_search = (search_text in d_id or search_text in d_name or search_text in assigned_to)
+            match_search = (search_text in d_id or search_text in d_name)
             match_status = (status_filter == "-- Trạng thái --" or status_filter == d_status)
             match_quality = (quality_filter == "-- Chất lượng --" or quality_filter == d_quality)
 
@@ -234,6 +227,9 @@ class InventoryTab(QWidget):
         elif status_str == DeviceStatus.MAINTENANCE.value:
             item_status.setBackground(QBrush(QColor("#FF0D0D")))  # Red
             item_status.setForeground(QBrush(QColor(0, 0, 0))) 
+        else:
+            item_status.setBackground(QBrush(QColor(211, 211, 211)))  # Light gray
+            item_status.setForeground(QBrush(QColor(0, 0, 0)))
             
         self.table.setItem(row_idx, 3, item_status)
 
@@ -268,7 +264,7 @@ class InventoryTab(QWidget):
         if dialog.exec():
             data = dialog.get_data()
             try:
-                device = self.inventory_manager.add_device(
+                self.inventory_manager.add_device(
                     name=data['name'],
                     category=data['category'],
                     purchase_date=data['purchase_date'],
@@ -277,7 +273,7 @@ class InventoryTab(QWidget):
                 QMessageBox.information(self, "Thành công", "Đã thêm thiết bị mới!")
                 self.load_data()
             except Exception as e:
-                QMessageBox.critical(self, "Lỗi", f"Lỗi: {e}")
+                QMessageBox.critical(self, "Lỗi", f"Lỗi khi thêm thiết bị: {e}")
 
     def delete_selected_device(self):
         current_row = self.table.currentRow()
@@ -290,16 +286,11 @@ class InventoryTab(QWidget):
         if not device:
             QMessageBox.critical(self, "Lỗi", "Thiết bị không tồn tại.")
             return
-        assignee_id = device.get_status().get('assigned_to')
 
         confirm = QMessageBox.question(self, "Xác nhận", f"Xóa thiết bị {device_id}?", 
                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if confirm == QMessageBox.StandardButton.Yes:
             try:
-                # Remove assign_devices in assignees first (only if device is assigned)
-                if assignee_id is not None:
-                    self.inventory_manager.hr_manager.remove_device_from_assigned_devices_list_of_assignee(assignee_id, device_id)
-
                 # Close any active assignments related to this device
                 assignment = self.inventory_manager.assignment_manager.get_active_assignment_by_device_id(device_id)
                 if assignment:
@@ -336,7 +327,7 @@ class AddDeviceDialog(QDialog):
         self.input_purchase_date.setPlaceholderText("Định dạng: YYYY-MM-DD")
 
         self.input_specifications = QLineEdit()
-        self.input_specifications.setPlaceholderText('Ví dụ: {"CPU": "Intel i7", "RAM": "16GB"}')
+        self.input_specifications.setPlaceholderText('Ví dụ: Ram: 16GB, CPU: Intel i7')
 
 
         layout.addRow("Tên Thiết bị:", self.input_name)

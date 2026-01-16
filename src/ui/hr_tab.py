@@ -206,19 +206,14 @@ class EmployeesSubTab(QWidget):
 
             # Remove employee from department's employee list
             emp = self.hr_manager.get_employee_by_id(emp_id, fetch_dept=True)
-            if emp and emp.get_department():
-                self.hr_manager.remove_employee_from_department_employee_list(emp_id, emp.get_department().get_id())
-            else:
-                QMessageBox.warning(self, "Cảnh báo", "Không thể cập nhật danh sách nhân viên của phòng ban do không tìm thấy phòng ban.")
 
             # Change assigned devices' status to 'available'
             assigned_devices = emp.get_assigned_devices() if emp else []
             for device_str in assigned_devices:
                 device_id = device_str.split("-")[0]
-                self.hr_manager.inventory_manager.update_device_status_and_assignee(
+                self.hr_manager.inventory_manager.update_device_status(
                     device_id=device_id,
                     new_status=DeviceStatus.AVAILABLE,
-                    new_assignee_id=None
                 )
             
             # Close active assignments related to this employee
@@ -360,20 +355,14 @@ class DepartmentsSubTab(QWidget):
         dept_id = self.table.item(row, 0).text()
         if QMessageBox.question(self, "Xác nhận", f"Xóa phòng {dept_id}?") == QMessageBox.StandardButton.Yes:
             
-            # Remove department from employees in this department
-            employees = self.hr_manager.get_employees_by_department_id(dept_id)
-            for emp in employees:
-                self.hr_manager.set_none_department_to_employee(emp.get_id())
-            
             # Change assigned devices' status to 'available'
             dept = self.hr_manager.get_department_by_id(dept_id)
             assigned_devices = dept.get_assigned_devices() if dept else []
             for device_str in assigned_devices:
                 device_id = device_str.split("-")[0]
-                self.hr_manager.inventory_manager.update_device_status_and_assignee(
+                self.hr_manager.inventory_manager.update_device_status(
                     device_id=device_id,
                     new_status=DeviceStatus.AVAILABLE,
-                    new_assignee_id=None
                 )
             
             # Close active assignments related to this department

@@ -1,4 +1,5 @@
 from base import Assignee
+from utils.constant_class import DeviceQualityStatus, DeviceStatus
 from .device import Device
 from typing import TYPE_CHECKING, Optional
 
@@ -14,9 +15,9 @@ class Employee(Assignee):
         phone_number: str,
         position: str,
         department: Optional["Department"] = None,
-        assigned_devices: list | None = None
+        inventory_manager = None,
     ):
-        super().__init__(name, employee_id, assigned_devices)
+        super().__init__(name, employee_id)
 
         # Public attributes
         self.email = email
@@ -25,25 +26,7 @@ class Employee(Assignee):
         # Protected attributes
         self._position = position
         self._department = department
-
-
-    def assign_device(self, device: Device) -> bool:
-        device_id = device.get_id()
-        if device_id not in self.__assigned_devices:
-            self.__assigned_devices.append(device_id)
-            return True
-        return False
-
-
-    def unassign_device(self, device: Device) -> bool:
-        device_id = device.get_id()
-        if device_id in self.__assigned_devices:
-            self.__assigned_devices.remove(device_id)
-            return True
-        return False
-    
-    def get_contact_info(self) -> str:
-        return f"Email: {self.email}, Phone: {self.phone_number}"
+        self._inventory_manager = inventory_manager
     
     def get_assignee_type(self) -> str:
         return "Employee"
@@ -61,12 +44,36 @@ class Employee(Assignee):
             "email": self.email,
             "phone_number": self.phone_number,
             "position": self._position,
-            "assigned_devices": self.__assigned_devices,
         }
     
-    def report_issue_for_personal_device(self, device: Device, issue_description: str) -> str:
-        return f"Báo cáo sự cố cho thiết bị cá nhân {device.name} ({device.get_id()}) của nhân viên {self.name} : {issue_description}"
+    def get_assigned_devices(self) -> list[Device]:
+        if self._inventory_manager:
+            return self._inventory_manager.get_devices_assigned_to_employee(self.get_id())
+        return []
     
-    def report_issue_for_department_device(self, device: Device, issue_description: str) -> str:
-        department = self._department
-        return f"Báo cáo sự cố cho thiết bị của phòng ban {department.get_name()} - thiết bị {device.name} ({device.get_id()}) bởi nhân viên {self.name} : {issue_description}"
+    def assign_device(self, device) -> None:
+        if self._inventory_manager:
+            self._inventory_manager.update_device_status(
+                device.get_id(), 
+                DeviceStatus.ASSIGNED, 
+            )
+    
+    def unassign_device(
+        self, 
+        device, 
+        return_quality_status: DeviceQualityStatus,
+        device_status: DeviceStatus
+    ) -> None:
+        if self._inventory_manager:
+            self._inventory_manager.update_device_and_quality_status(
+                device.get_id(), 
+                device_status, 
+                return_quality_status,
+            )
+    
+    # def report_issue_for_personal_device(self, device: Device, issue_description: str) -> str:
+    #     return f"Báo cáo sự cố cho thiết bị cá nhân {device.name} ({device.get_id()}) của nhân viên {self.name} : {issue_description}"
+    
+    # def report_issue_for_department_device(self, device: Device, issue_description: str) -> str:
+    #     department = self._department
+    #     return f"Báo cáo sự cố cho thiết bị của phòng ban {department.get_name()} - thiết bị {device.name} ({device.get_id()}) bởi nhân viên {self.name} : {issue_description}"
