@@ -19,8 +19,7 @@ class DatabaseManager:
                 location TEXT,
                 manager_id TEXT,
                 manager_name TEXT,
-                assigned_devices TEXT, -- Lưu chuỗi JSON của danh sách device IDs,
-                employees TEXT -- Lưu chuỗi JSON của danh sách employee IDs
+                FOREIGN KEY(manager_id) REFERENCES employees(employee_id) ON DELETE SET NULL
             );
         """
 
@@ -33,8 +32,7 @@ class DatabaseManager:
                 position TEXT,
                 department_id TEXT, -- Khóa ngoại trỏ về departments
                 department_name TEXT,
-                assigned_devices TEXT, -- Lưu chuỗi JSON của danh sách device IDs,
-                FOREIGN KEY(department_id) REFERENCES departments(department_id)
+                FOREIGN KEY(department_id) REFERENCES departments(department_id) ON DELETE SET NULL
             );
         """
 
@@ -46,8 +44,7 @@ class DatabaseManager:
                 status TEXT, -- Lưu string: 'available', 'assigned'...
                 quality_status TEXT, -- Lưu string: 'good', 'broken'...
                 purchase_date TEXT,
-                assigned_to TEXT, -- ID của Employee hoặc Department
-                specifications TEXT -- Lưu chuỗi JSON
+                specifications TEXT
             );
         """
 
@@ -63,11 +60,13 @@ class DatabaseManager:
                 notes TEXT,
                 device_id TEXT,
                 device_name TEXT,
-                assignee_id TEXT,
+                assignee_employee_id TEXT,     -- nullable FK
+                assignee_department_id TEXT,   -- nullable FK
                 assignee_name TEXT,
                 FOREIGN KEY(device_id) REFERENCES devices(device_id),
-                FOREIGN KEY(assignee_id) REFERENCES employees(employee_id),
-                FOREIGN KEY(assignee_id) REFERENCES departments(department_id)
+                FOREIGN KEY(assignee_employee_id) REFERENCES employees(employee_id) ON DELETE SET NULL,
+                FOREIGN KEY(assignee_department_id) REFERENCES departments(department_id) ON DELETE SET NULL,
+                CHECK ( (assignee_employee_id IS NULL) != (assignee_department_id IS NULL) ) -- exactly one assignee
             );
         """
 
@@ -82,8 +81,8 @@ class DatabaseManager:
                 date_resolved TEXT,
                 technician_notes TEXT,
                 cost REAL,
-                FOREIGN KEY(device_id) REFERENCES devices(id),
-                FOREIGN KEY(reporter_id) REFERENCES employees(id)
+                FOREIGN KEY(device_id) REFERENCES devices(device_id) ON DELETE SET NULL,
+                FOREIGN KEY(reporter_id) REFERENCES employees(employee_id) ON DELETE SET NULL
             );
         """
 
@@ -92,9 +91,9 @@ class DatabaseManager:
                 username TEXT PRIMARY KEY,
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL,
-                employee_id TEXT,
-                FOREIGN KEY(employee_id) REFERENCES employees(employee_id)
-                );
+                employee_id TEXT UNIQUE,
+                FOREIGN KEY(employee_id) REFERENCES employees(employee_id) ON DELETE SET NULL
+            );
         """
 
         conn = self.get_connection()

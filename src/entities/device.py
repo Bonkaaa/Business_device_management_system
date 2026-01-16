@@ -13,14 +13,13 @@ class Device:
         category: str, 
         status: DeviceStatus,
         purchase_date: str,
-        assigned_to: Assignee | None,
         specifications: Dict[str, Any],
         quality_status: DeviceQualityStatus | None = None,
+        assignment_manager= None,
     ):
         # Private attributes
         self.__status = status
         self.__purchase_date = purchase_date
-        self.__assigned_to = assigned_to
         self.__specifications = specifications
         if quality_status is not None:
             self.__device_quality_status = quality_status
@@ -29,6 +28,7 @@ class Device:
 
         # Protected attributes
         self._device_id = device_id
+        self._assignment_manager = assignment_manager
 
         # Public attributes
         self.name = name
@@ -71,7 +71,6 @@ class Device:
     def get_status(self) -> Dict[str, Any]:
         return {
             "status": self.__status,
-            "assigned_to": self.__assigned_to,
         }
 
     def is_available(self) -> bool:
@@ -84,27 +83,32 @@ class Device:
             "category": self.category,
             "status": self.__status.value,
             "purchase_date": self.__purchase_date.isoformat(),
-            "assigned_to": self.__assigned_to,
             "specifications": self.__specifications,
         }
+    
+    def update_quality_status(self, new_status: DeviceStatus) -> None:
+        self.__device_quality_status = new_status
 
-    def update_device_status(
+    def update_device_and_quality_status(
         self,
         new_status: DeviceStatus,
-    ):
-        self.__status = new_status
-    
-    def update_assigned_to(
-        self,
-        assigned_to: Assignee,
-    ):
-        self.__assigned_to = assigned_to
+        new_quality_status: DeviceQualityStatus
+    ) -> None:
+        self._assignment_manager.inventory_manager.update_device_and_quality_status(
+            self._device_id,
+            new_status,
+            new_quality_status
+        )
 
-    def update_quality_status(
-        self,
-        new_quality_status: DeviceQualityStatus,
-    ):
-        self.__device_quality_status = new_quality_status
+    def get_assignee(self) -> Optional[Assignee]:
+        if self._assignment_manager:
+            assignment = self._assignment_manager.get_active_assignment_by_device_id(self._device_id)
+
+            if assignment:
+                return assignment.get_assignee()
+            else:
+                return None
+        return None
 
     
     

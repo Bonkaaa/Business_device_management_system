@@ -144,53 +144,33 @@ class MaintenanceManager:
 
             if is_repaired:
                 # Check if device was assigned
-                cursor.execute("""
-                    SELECT assigned_to FROM devices WHERE device_id = ?
-                """, (device.get_id(),))
-                row = cursor.fetchone()
-
-                if row and row[0]:
-                    new_status = DeviceStatus.ASSIGNED.value
+                assignee = device.get_assignee()
+                if assignee:
+                    new_status = DeviceStatus.ASSIGNED
                 else:
-                    new_status = DeviceStatus.AVAILABLE.value
-
-                cursor.execute("""
-                    UPDATE devices
-                    SET status = ?, quality_status = ?
-                    WHERE device_id = ?
-                """, (
+                    new_status = DeviceStatus.AVAILABLE
+                
+                device.update_device_and_quality_status(
                     new_status,
-                    DeviceQualityStatus.GOOD.value,
-                    device.get_id()
-                ))
+                    DeviceQualityStatus.GOOD
+                )
 
             else:
-                # Update device
-                cursor.execute("""
-                    UPDATE devices
-                    SET status = ?, quality_status = ?, assigned_to = NULL
-                    WHERE device_id = ?
-                """, (
-                    DeviceStatus.OUT_OF_SERVICE.value,
-                    DeviceQualityStatus.RETIRED.value,
-                    device.get_id()
-                ))
+                device.update_device_and_quality_status(
+                    DeviceStatus.OUT_OF_SERVICE,
+                    DeviceQualityStatus.RETIRED
+                )
 
                 # Update assignment if exists
-                assignemnt = self.assignment_manager.get_active_assignment_by_device_id(device.get_id())
-                if assignemnt:
-                    assignment_id = assignemnt.get_id()
-                    cursor.execute("""
-                        UPDATE assignments
-                        SET status = ?, actual_return_date = ?, quality_status = ?, notes = ?
-                        WHERE assignment_id = ?
-                    """, (
-                        AssignmentStatus.CLOSED.value,
-                        datetime.now().isoformat(),
-                        DeviceQualityStatus.BROKEN.value,
-                        f"[Đóng] Do thiết bị {device.get_id()} bị hỏng và không thể sửa chữa nên đã được ngừng sử dụng.",      
-                        assignment_id
-                    ))
+                assignment = self.assignment_manager.get_active_assignment_by_device_id(device.get_id())
+
+                if assignment:
+                    assignment.update_assignment_when_closed(
+                        assignment=assignment,
+                        actual_return_date=datetime.now().isoformat(),
+                        return_quality_status=DeviceQualityStatus.BROKEN,
+                        note_append=f"[Đóng] Do thiết bị {device.get_id()} bị hỏng và không thể sửa chữa nên đã được ngừng sử dụng.\n"
+                    )
             
             # Update maintenance ticket status
             cursor.execute("""

@@ -29,11 +29,10 @@ class Assignment:
         self._device = device
         self._assignee = assignee
 
-        self._notes += f"[Khởi tạo] Vào ngày {initial_date.isoformat()}, thiết bị {assignment_id} đã được giao cho người dùng/phòng ban {assignee.get_id()} - {assignee.name}."
         self.__status = status if status is not None else AssignmentStatus.OPEN
 
         if self._device is not None:
-            self.__quality_status = self._device.get_status()["status"]
+            self.__quality_status = self._device.get_quality_status()
         else:
             self.__quality_status = None
 
@@ -81,42 +80,42 @@ class Assignment:
             "status": self.__status.value,
         }
     
-    def return_device(
-        self,
-        return_quality_status: DeviceQualityStatus,
-        actual_return_date: datetime | None = None,
-        return_date_today: bool = False,
-        broken_status: bool = False,
-    ):
-        self.__return_quality_status = return_quality_status
+    # def return_device(
+    #     self,
+    #     return_quality_status: DeviceQualityStatus,
+    #     actual_return_date: datetime | None = None,
+    #     return_date_today: bool = False,
+    #     broken_status: bool = False,
+    # ):
+    #     self.__return_quality_status = return_quality_status
 
-        # Check if actual_return_date is provided or if return_date_today is True
-        if return_date_today:
-            self.__actual_return_date = datetime.now()
-        else:
-            self.__actual_return_date = actual_return_date
+    #     # Check if actual_return_date is provided or if return_date_today is True
+    #     if return_date_today:
+    #         self.__actual_return_date = datetime.now()
+    #     else:
+    #         self.__actual_return_date = actual_return_date
 
-        # Check overdue or not
-        if self.__expected_return_date is not None and actual_return_date > self.__expected_return_date:
-            self.__status = AssignmentStatus.OVERDUE
-        else:
-            self.__status = AssignmentStatus.CLOSED
+    #     # Check overdue or not
+    #     if self.__expected_return_date is not None and actual_return_date > self.__expected_return_date:
+    #         self.__status = AssignmentStatus.OVERDUE
+    #     else:
+    #         self.__status = AssignmentStatus.CLOSED
 
-        # Update device status and quality status and assignee
-        if broken_status:
-            self._device.update_device_status(DeviceStatus.OUT_OF_SERVICE)
-        else:
-            self._device.update_device_status(DeviceStatus.AVAILABLE)
+    #     # Update device status and quality status and assignee
+    #     if broken_status:
+    #         self._device.update_device_status(DeviceStatus.OUT_OF_SERVICE)
+    #     else:
+    #         self._device.update_device_status(DeviceStatus.AVAILABLE)
 
-        self._device.update_quality_status(return_quality_status)
-        self._device.update_assigned_to(None)
+    #     self._device.update_quality_status(return_quality_status)
+    #     self._device.update_assigned_to(None)
 
-        # Remove device from assignee's list
-        self._assignee.unassign_device(self._device.get_id())
+    #     # Remove device from assignee's list
+    #     self._assignee.unassign_device(self._device.get_id())
 
 
-        # Update notes
-        self._notes += f"[Đóng] Vào ngày {self.__actual_return_date.isoformat() if self.__actual_return_date else 'N/A'}, thiết bị {self._device.get_id()} đã được trả về với tình trạng chất lượng: {self.__return_quality_status}."
+    #     # Update notes
+    #     self._notes += f"[Đóng] Vào ngày {self.__actual_return_date.isoformat() if self.__actual_return_date else 'N/A'}, thiết bị {self._device.get_id()} đã được trả về với tình trạng chất lượng: {self.__return_quality_status}."
 
 
         

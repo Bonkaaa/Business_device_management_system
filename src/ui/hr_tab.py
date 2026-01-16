@@ -16,6 +16,9 @@ class EmployeeDetailDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Chi tiết nhân viên - {employee.name}")
         self.setMinimumWidth(400)
+
+        assigned_devices = employee.get_assigned_devices()
+        assigned_devices_str = ", ".join([device.get_id() for device in assigned_devices]) if assigned_devices else "Chưa có"
         
         layout = QVBoxLayout()
         group = QGroupBox("Thông tin cá nhân")
@@ -26,7 +29,7 @@ class EmployeeDetailDialog(QDialog):
         form.addRow("<b>Số điện thoại:</b>", QLabel(employee.phone_number))
         form.addRow("<b>Chức vụ:</b>", QLabel(employee.get_position()))
         form.addRow("<b>Phòng ban:</b>", QLabel(employee.get_department().get_name() if employee.get_department() else "N/A"))
-        form.addRow("<b>Thiết bị được giao:</b>", QLabel(", ".join(employee.get_assigned_devices()) if employee.get_assigned_devices() else "Chưa có"))
+        form.addRow("<b>Thiết bị được giao:</b>", QLabel(assigned_devices_str))
         
         group.setLayout(form)
         layout.addWidget(group)
@@ -42,6 +45,9 @@ class DepartmentDetailDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Chi tiết phòng ban - {dept.get_name()}")
         self.setMinimumWidth(400)
+
+        assigned_devices = dept.get_assigned_devices()
+        assigned_devices_str = ", ".join([device.get_id() for device in assigned_devices]) if assigned_devices else "Chưa có"
         
         layout = QVBoxLayout()
         group = QGroupBox("Thông tin phòng ban")
@@ -52,7 +58,7 @@ class DepartmentDetailDialog(QDialog):
         form.addRow("<b>Địa điểm:</b>", QLabel(dept.get_location()))
         form.addRow("<b>Quản lý:</b>", QLabel(dept.get_manager().name if dept.get_manager() else "Chưa có"))
         form.addRow("<b>Nhân viên:</b>", QLabel(", ".join([emp.name for emp in dept.get_employees()]) if dept.get_employees() else "Chưa có"))
-        form.addRow("<b>Thiết bị được giao:</b>", QLabel(", ".join(dept.get_assigned_devices()) if dept.get_assigned_devices() else "Chưa có"))
+        form.addRow("<b>Thiết bị được giao:</b>", QLabel(assigned_devices_str))
         
         group.setLayout(form)
         layout.addWidget(group)
@@ -203,36 +209,6 @@ class EmployeesSubTab(QWidget):
             return
         emp_id = self.table.item(row, 0).text()
         if QMessageBox.question(self, "Xác nhận", f"Xóa nhân viên {emp_id}?") == QMessageBox.StandardButton.Yes:
-
-            # Remove employee from department's employee list
-            emp = self.hr_manager.get_employee_by_id(emp_id, fetch_dept=True)
-            if emp and emp.get_department():
-                self.hr_manager.remove_employee_from_department_employee_list(emp_id, emp.get_department().get_id())
-            else:
-                QMessageBox.warning(self, "Cảnh báo", "Không thể cập nhật danh sách nhân viên của phòng ban do không tìm thấy phòng ban.")
-
-            # Change assigned devices' status to 'available'
-            assigned_devices = emp.get_assigned_devices() if emp else []
-            for device_str in assigned_devices:
-                device_id = device_str.split("-")[0]
-                self.hr_manager.inventory_manager.update_device_status_and_assignee(
-                    device_id=device_id,
-                    new_status=DeviceStatus.AVAILABLE,
-                    new_assignee_id=None
-                )
-            
-            # Close active assignments related to this employee
-            assignments = self.hr_manager.assignment_manager.get_active_assignment_by_assignee_id(emp_id)
-            if assignments:
-                for assignment in assignments:
-                    self.hr_manager.assignment_manager.close_assignment(
-                        assignment_id=assignment.get_id(),
-                        return_quality_status=DeviceQualityStatus.GOOD,
-                        actual_return_date=datetime.now().isoformat(),
-                        broken_status=False
-                    )
-
-            # Finally, remove employee from database
             self.hr_manager.remove_employee(emp_id)
             self.load_data()
 
@@ -359,35 +335,6 @@ class DepartmentsSubTab(QWidget):
             return
         dept_id = self.table.item(row, 0).text()
         if QMessageBox.question(self, "Xác nhận", f"Xóa phòng {dept_id}?") == QMessageBox.StandardButton.Yes:
-            
-            # Remove department from employees in this department
-            employees = self.hr_manager.get_employees_by_department_id(dept_id)
-            for emp in employees:
-                self.hr_manager.set_none_department_to_employee(emp.get_id())
-            
-            # Change assigned devices' status to 'available'
-            dept = self.hr_manager.get_department_by_id(dept_id)
-            assigned_devices = dept.get_assigned_devices() if dept else []
-            for device_str in assigned_devices:
-                device_id = device_str.split("-")[0]
-                self.hr_manager.inventory_manager.update_device_status_and_assignee(
-                    device_id=device_id,
-                    new_status=DeviceStatus.AVAILABLE,
-                    new_assignee_id=None
-                )
-            
-            # Close active assignments related to this department
-            assignments = self.hr_manager.assignment_manager.get_active_assignment_by_assignee_id(dept_id)
-            if assignments:
-                for assignment in assignments:
-                    self.hr_manager.assignment_manager.close_assignment(
-                        assignment_id=assignment.get_id(),
-                        return_quality_status=DeviceQualityStatus.GOOD,
-                        actual_return_date=datetime.now().isoformat(),
-                        broken_status=False
-                    )
- 
-            # Finally, remove department from database
             self.hr_manager.remove_department(dept_id)
             self.load_data()
             self.data_changed.emit()

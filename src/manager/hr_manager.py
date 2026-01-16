@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import Optional, List
 from entities.employee import Employee
 from entities.department import Department
 from database import DatabaseManager
+from utils.constant_class import DeviceQualityStatus, DeviceStatus
 from utils.id_generators import generate_employee_id, generate_department_id
 
 class HRManager():
@@ -33,7 +35,7 @@ class HRManager():
             phone_number=phone_number,
             position=position,
             department=department,
-            assigned_devices=[],
+            inventory_manager=self.inventory_manager,
         )
 
         department_name = department.get_name() if department else None
@@ -49,6 +51,31 @@ class HRManager():
         return new_employee 
     
     def remove_employee(self, employee_id: str) -> None:
+        emp = self.get_employee_by_id(employee_id, fetch_dept=True)
+
+        if not emp:
+            return
+        
+        # Changed devices assigned to this employee to AVAILABLE
+        assigned_devices = emp.get_assigned_devices()
+        for device in assigned_devices:
+            self.inventory_manager.update_device_status(
+                device.get_id(),
+                DeviceStatus.AVAILABLE,
+            )
+        
+        # Close active assignments related to this employee
+        assignments = self.assignment_manager.get_active_assignments_by_assignee_id(employee_id)
+        if assignments:
+            for assignment in assignments:
+                self.assignment_manager.close_assignment(
+                    assignment.get_id(),
+                    actual_return_date=datetime.now().isoformat(),
+                    return_quality_status=DeviceQualityStatus.GOOD,
+                    broken_status=False
+                )
+
+        # Remove employee from database
         query = "DELETE FROM employees WHERE employee_id = ?"
         params = (employee_id,)
         self.db_manager.execute_query(query, params)
@@ -73,7 +100,7 @@ class HRManager():
                 phone_number=row['phone_number'],
                 position=row['position'],
                 department=department,
-                assigned_devices=row['assigned_devices'].split(",") if row['assigned_devices'] else []
+                inventory_manager=self.inventory_manager,
             )
         return None
     
@@ -90,7 +117,7 @@ class HRManager():
                 phone_number=row['phone_number'],
                 position=row['position'],
                 department=department,
-                assigned_devices=row['assigned_devices'].split(",") if row['assigned_devices'] else []
+                inventory_manager=self.inventory_manager,
             )
             employees.append(employee)
         return employees
@@ -109,15 +136,10 @@ class HRManager():
                 phone_number=row['phone_number'],
                 position=row['position'],
                 department=department,
-                assigned_devices=row['assigned_devices'].split(",") if row['assigned_devices'] else []
+                inventory_manager=self.inventory_manager,
             )
             employees.append(employee)
         return employees
-    
-    def set_none_department_to_employee(self, employee_id: str) -> None:
-        query = "UPDATE employees SET department_id = ?, department_name = ? WHERE employee_id = ?"
-        params = (None, None, employee_id)
-        self.db_manager.execute_query(query, params)
     
     def transfer_employee(self, employee_id: str, new_department_id: str) -> None:
         query = "UPDATE employees SET department_id = ? WHERE employee_id = ?"
@@ -130,7 +152,6 @@ class HRManager():
         self,
         name: str,
         location: str,
-        manager_name: str | None = None,
     ) -> Department:
         department_id = generate_department_id()
         new_department = Department(
@@ -138,18 +159,43 @@ class HRManager():
             department_id=department_id,
             manager=None,  # Manager sẽ được gán sau
             location=location,
-            assigned_devices=[],
+            hr_manager=self,
+            inventory_manager=self.inventory_manager,
         )
         # Thêm phòng ban vào database
         query = """
-        INSERT INTO departments (department_id, name, location, manager_name)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO departments (department_id, name, location)
+        VALUES (?, ?, ?)
         """
-        params = (department_id, name, location, manager_name)
+        params = (department_id, name, location)
         self.db_manager.execute_query(query, params)
         return new_department
 
     def remove_department(self, department_id: str) -> None:
+        dept = self.get_department_by_id(department_id)
+        if not dept:
+            return
+        
+        # Changed devices assigned to this department to AVAILABLE
+        assigned_devices = dept.get_assigned_devices()
+        for device in assigned_devices:
+            self.inventory_manager.update_device_status(
+                device.get_id(),
+                DeviceStatus.AVAILABLE,
+            )
+
+        # Close active assignments related to this department
+        assignments = self.assignment_manager.get_active_assignments_by_assignee_id(department_id)
+
+        for assignment in assignments:
+            self.assignment_manager.close_assignment(
+                assignment.get_id(),
+                actual_return_date=datetime.now().isoformat(),
+                return_quality_status=DeviceQualityStatus.GOOD,
+                broken_status=False
+            )
+        
+        # Remove department from database
         query = "DELETE FROM departments WHERE department_id = ?"
         params = (department_id,)
         self.db_manager.execute_query(query, params)
@@ -174,8 +220,8 @@ class HRManager():
                 department_id=row['department_id'],
                 manager=manager,  
                 location=row['location'],
-                assigned_devices=row['assigned_devices'].split(",") if row['assigned_devices'] else [],
-                employees=[],
+                hr_manager=self,
+                inventory_manager=self.inventory_manager,
             )
         return None
     
@@ -196,8 +242,8 @@ class HRManager():
                 department_id=row['department_id'],
                 manager=manager, 
                 location=row['location'],
-                assigned_devices=row['assigned_devices'].split(",") if row['assigned_devices'] else [],
-                employees=[],
+                hr_manager=self,
+                inventory_manager=self.inventory_manager,
             )
             departments.append(department)
         return departments
@@ -211,28 +257,7 @@ class HRManager():
         manager_name = self.get_employee_by_id(manager_employee_id).get_name()
         params = (manager_employee_id, manager_name, department_id)
         self.db_manager.execute_query(query, params)
-
-    def remove_employee_from_department_employee_list(self, employee_id: str, department_id: str) -> None:
-        query_list = "SELECT employees FROM departments WHERE department_id = ?"
-        params = (department_id,)
-        row = self.db_manager.fetch_one(query_list, params)
-
-        if row and row['employees']:
-            employee_list = row['employees'].split(",")
-            if employee_id in employee_list:
-                employee_list.remove(employee_id)
-                updated_employee_list = ",".join(employee_list)
-
-                query_update = "UPDATE departments SET employees = ? WHERE department_id = ?"
-                params_update = (updated_employee_list, department_id)
-                self.db_manager.execute_query(query_update, params_update)
-            else:
-                return 
-        else:
-            return
     
-    
-
     # ===== Statistics & Reporting =====
     def get_total_employees(self) -> int:
         query = "SELECT COUNT(*) as total FROM employees"
@@ -268,26 +293,6 @@ class HRManager():
             return department
         
         return None
-    
-    def remove_device_from_assigned_devices_list_of_assignee(self, assignee_id: str, device_id: str) -> None:
-        assignee = self.get_assignee_by_id(assignee_id)
-        if not assignee:
-            return
-        
-        assigned_devices = assignee.get_assigned_devices()
-        if device_id in assigned_devices:
-            assigned_devices.remove(device_id)
-            # Cập nhật lại trong database
-            table_name = "employees" if isinstance(assignee, Employee) else "departments"
-            id_field = "employee_id" if isinstance(assignee, Employee) else "department_id"
-            query = f"""
-                UPDATE {table_name}
-                SET assigned_devices = ?
-                WHERE {id_field} = ?
-            """
-            updated_devices_str = ",".join(assigned_devices)
-            params = (updated_devices_str, assignee_id)
-            self.db_manager.execute_query(query, params)
 
 
     

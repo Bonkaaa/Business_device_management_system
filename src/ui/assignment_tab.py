@@ -149,8 +149,8 @@ class AssignmentTab(QWidget):
             
             # [SỬA LOGIC] Luôn lấy toàn bộ danh sách (cả cũ và mới)
             # Bộ lọc ComboBox sẽ lo việc hiển thị cái gì
-            if is_employee and emp_id:
-                # Lấy tất cả phiếu của nhân viên này
+            if is_employee or emp_id:
+                # Lấy tất cả phiếu của nhân viên này'
                 self.all_assignments = self.assignment_manager.get_all_assignments_by_assignee_id(emp_id)
             else:
                 # Lấy tất cả phiếu hệ thống
@@ -158,6 +158,9 @@ class AssignmentTab(QWidget):
 
             if self.all_assignments is None:
                 self.all_assignments = []
+
+            for assignment in self.all_assignments:
+                self.assignment_manager.update_overdue_if_needed(assignment)
 
             # [FIX QUAN TRỌNG] Phải gọi hàm này để vẽ dữ liệu lên bảng
             self.apply_filters()
@@ -328,9 +331,6 @@ class ReturnAssignmentDialog(QDialog):
         self.quality_combo.addItem("Hỏng", DeviceQualityStatus.BROKEN)
         self.quality_combo.addItem("Thanh Lý", DeviceQualityStatus.RETIRED)
 
-        self.check_broken = QCheckBox("Thiết bị bị hỏng")
-        self.quality_combo.currentIndexChanged.connect(self.on_quality_change)
-
         # Checkbox for return date today
         self.return_date_today = QCheckBox("Trả thiết bị ngày hôm nay")
         self.return_date_today.setChecked(True)
@@ -352,7 +352,6 @@ class ReturnAssignmentDialog(QDialog):
         self.return_date_today.toggled.connect(self.on_return_date_toggle)
 
         layout.addRow("Chọn Chất Lượng Trả:", self.quality_combo)
-        layout.addRow("", self.check_broken)
         layout.addRow(self.return_date_today)
         layout.addRow(self.return_date_container)
         
@@ -368,13 +367,6 @@ class ReturnAssignmentDialog(QDialog):
 
         self.setLayout(layout)
 
-    def on_quality_change(self, index):
-        quality = self.quality_combo.itemData(index)
-        if quality == DeviceQualityStatus.BROKEN:
-            self.check_broken.setChecked(True)
-        else:
-            self.check_broken.setChecked(False)
-
     def on_return_date_toggle(self, checked: bool):
         if checked:
             self.return_date_container.hide()
@@ -384,6 +376,6 @@ class ReturnAssignmentDialog(QDialog):
     def get_data(self):
         return {
             "return_quality_status": self.quality_combo.currentData(),
-            "broken_status": self.check_broken.isChecked(),
+            "broken_status": self.quality_combo.currentData() == DeviceQualityStatus.BROKEN,
             "actual_return_date": self.actual_return_date_edit.date().toString("yyyy-MM-dd") if not self.return_date_today.isChecked() else datetime.now().strftime("%Y-%m-%d")
         }
