@@ -1,7 +1,9 @@
+from datetime import datetime
 from typing import Optional, List
 from entities.employee import Employee
 from entities.department import Department
 from database import DatabaseManager
+from utils.constant_class import DeviceQualityStatus, DeviceStatus
 from utils.id_generators import generate_employee_id, generate_department_id
 
 class HRManager():
@@ -49,6 +51,31 @@ class HRManager():
         return new_employee 
     
     def remove_employee(self, employee_id: str) -> None:
+        emp = self.get_employee_by_id(employee_id, fetch_dept=True)
+
+        if not emp:
+            return
+        
+        # Changed devices assigned to this employee to AVAILABLE
+        assigned_devices = emp.get_assigned_devices()
+        for device in assigned_devices:
+            self.inventory_manager.update_device_status(
+                device.get_id(),
+                DeviceStatus.AVAILABLE,
+            )
+        
+        # Close active assignments related to this employee
+        assignments = self.assignment_manager.get_active_assignments_by_assignee_id(employee_id)
+        if assignments:
+            for assignment in assignments:
+                self.assignment_manager.close_assignment(
+                    assignment.get_id(),
+                    actual_return_date=datetime.now().isoformat(),
+                    return_quality_status=DeviceQualityStatus.GOOD,
+                    broken_status=False
+                )
+
+        # Remove employee from database
         query = "DELETE FROM employees WHERE employee_id = ?"
         params = (employee_id,)
         self.db_manager.execute_query(query, params)
@@ -145,6 +172,30 @@ class HRManager():
         return new_department
 
     def remove_department(self, department_id: str) -> None:
+        dept = self.get_department_by_id(department_id)
+        if not dept:
+            return
+        
+        # Changed devices assigned to this department to AVAILABLE
+        assigned_devices = dept.get_assigned_devices()
+        for device in assigned_devices:
+            self.inventory_manager.update_device_status(
+                device.get_id(),
+                DeviceStatus.AVAILABLE,
+            )
+
+        # Close active assignments related to this department
+        assignments = self.assignment_manager.get_active_assignments_by_assignee_id(department_id)
+
+        for assignment in assignments:
+            self.assignment_manager.close_assignment(
+                assignment.get_id(),
+                actual_return_date=datetime.now().isoformat(),
+                return_quality_status=DeviceQualityStatus.GOOD,
+                broken_status=False
+            )
+        
+        # Remove department from database
         query = "DELETE FROM departments WHERE department_id = ?"
         params = (department_id,)
         self.db_manager.execute_query(query, params)

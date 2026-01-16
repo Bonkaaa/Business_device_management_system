@@ -29,7 +29,6 @@ class Assignment:
         self._device = device
         self._assignee = assignee
 
-        self._notes += f"[Khởi tạo] Vào ngày {initial_date.isoformat()}, thiết bị {assignment_id} đã được giao cho người dùng/phòng ban {assignee.get_id()} - {assignee.name}."
         self.__status = status if status is not None else AssignmentStatus.OPEN
 
         if self._device is not None:

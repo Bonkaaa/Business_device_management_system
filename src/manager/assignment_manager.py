@@ -110,12 +110,6 @@ class AssignmentManager:
 
         new_device_status = DeviceStatus.OUT_OF_SERVICE if broken_status else DeviceStatus.AVAILABLE
 
-        query_update_assignment = """
-            UPDATE assignments
-            SET quality_status = ?, actual_return_date = ?, status = ?, notes = notes || ?
-            WHERE assignment_id = ?
-        """
-
         note_append = f"[Đóng] Trả vào ngày {actual_return_date}, tình trạng: {return_quality_status.value}.\n"
 
         try:
@@ -123,13 +117,12 @@ class AssignmentManager:
             cursor = conn.cursor()
 
             # Update assignment
-            cursor.execute(query_update_assignment, (
-                return_quality_status.value,
-                actual_return_date_str,
-                AssignmentStatus.CLOSED.value,
-                note_append,
-                assignment_id
-            ))
+            self.update_assignment_when_closed(
+                assignment=assignment,
+                actual_return_date=actual_return_date_str,
+                return_quality_status=return_quality_status,
+                note_append=note_append
+            )
 
             conn.commit()
             conn.close()
@@ -156,6 +149,9 @@ class AssignmentManager:
     def get_all_assignments_by_assignee_id(self, assignee_id: str) -> list[Assignment]:
         assignee = self.hr_manager.get_assignee_by_id(assignee_id)
 
+        if not assignee:
+            return []
+
         assignee_type = assignee.get_assignee_type()
         
         if assignee_type == "Department":
@@ -170,8 +166,12 @@ class AssignmentManager:
             assignments.append(assignment)
         return assignments
     
-    def get_active_assignment_by_assignee_id(self, assignee_id: str) -> list[Assignment] | None:
+    def get_active_assignments_by_assignee_id(self, assignee_id: str) -> list[Assignment] | None:
         assignee = self.hr_manager.get_assignee_by_id(assignee_id)
+
+        if not assignee:
+            return None
+
         assignee_type = assignee.get_assignee_type()
         
         if assignee_type == "Department":
@@ -241,6 +241,60 @@ class AssignmentManager:
         if row and row['count'] > 0:
             return True
         return False
+    
+    def update_assignment_when_closed(
+        self, 
+        assignment: Assignment,
+        actual_return_date: datetime,
+        return_quality_status: DeviceQualityStatus,
+        note_append: str = ""
+    ) -> None:
+        query = """
+            UPDATE assignments
+            SET actual_return_date = ?, status = ?, quality_status = ?, notes = notes || ?
+            WHERE assignment_id = ?
+        """
+        actual_return_date_str = actual_return_date
+
+        try:
+            conn = self.db_manager.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute(query, (
+                actual_return_date_str,
+                AssignmentStatus.CLOSED.value,
+                return_quality_status.value,
+                note_append,
+                assignment.get_id()
+            ))
+
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Lỗi khi cập nhật assignment khi đóng: {e}")
+
+    def update_overdue_if_needed(self, assignment: Assignment) -> None:
+        if assignment.get_expected_return_date() and assignment.get_expected_return_date() < datetime.now():
+            query = """
+                UPDATE assignments
+                SET status = ?
+                WHERE assignment_id = ?
+            """
+            try:
+                conn = self.db_manager.get_connection()
+                cursor = conn.cursor()
+
+                cursor.execute(query, (
+                    AssignmentStatus.OVERDUE.value,
+                    assignment.get_id()
+                ))
+
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                print(f"Lỗi khi cập nhật trạng thái quá hạn: {e}")
+
+
         
     # ======= Helper Methods =======
     def _row_to_assignment(self, row) -> Assignment:

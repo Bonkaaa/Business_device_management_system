@@ -149,8 +149,8 @@ class AssignmentTab(QWidget):
             
             # [SỬA LOGIC] Luôn lấy toàn bộ danh sách (cả cũ và mới)
             # Bộ lọc ComboBox sẽ lo việc hiển thị cái gì
-            if is_employee and emp_id:
-                # Lấy tất cả phiếu của nhân viên này
+            if is_employee or emp_id:
+                # Lấy tất cả phiếu của nhân viên này'
                 self.all_assignments = self.assignment_manager.get_all_assignments_by_assignee_id(emp_id)
             else:
                 # Lấy tất cả phiếu hệ thống
@@ -158,6 +158,9 @@ class AssignmentTab(QWidget):
 
             if self.all_assignments is None:
                 self.all_assignments = []
+
+            for assignment in self.all_assignments:
+                self.assignment_manager.update_overdue_if_needed(assignment)
 
             # [FIX QUAN TRỌNG] Phải gọi hàm này để vẽ dữ liệu lên bảng
             self.apply_filters()

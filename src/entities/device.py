@@ -85,18 +85,20 @@ class Device:
             "purchase_date": self.__purchase_date.isoformat(),
             "specifications": self.__specifications,
         }
+    
+    def update_quality_status(self, new_status: DeviceStatus) -> None:
+        self.__device_quality_status = new_status
 
-    def update_device_status(
+    def update_device_and_quality_status(
         self,
         new_status: DeviceStatus,
-    ):
-        self.__status = new_status
-
-    def update_quality_status(
-        self,
-        new_quality_status: DeviceQualityStatus,
-    ):
-        self.__device_quality_status = new_quality_status
+        new_quality_status: DeviceQualityStatus
+    ) -> None:
+        self._assignment_manager.inventory_manager.update_device_and_quality_status(
+            self._device_id,
+            new_status,
+            new_quality_status
+        )
 
     def get_assignee(self) -> Optional[Assignee]:
         if self._assignment_manager:

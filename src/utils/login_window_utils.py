@@ -9,21 +9,26 @@ def create_default_accounts(auth_manager):
     count = cursor.fetchone()[0]
     conn.close()
 
-    # Create an employee data
-    query = """
-    INSERT INTO employees (employee_id, name, email, phone_number, position)
-    VALUES (?, ?, ?, ?, ?)
-    """
+    # Create an employee data if not exists
+    check_query = "SELECT COUNT(*) FROM employees WHERE employee_id = ?"
+    check_params = ("EMP000000",)
+    employee_exists = auth_manager.db_manager.fetch_one(check_query, check_params)
+    
+    if not employee_exists or employee_exists.get('COUNT(*)') == 0:
+        query = """
+        INSERT INTO employees (employee_id, name, email, phone_number, position)
+        VALUES (?, ?, ?, ?, ?)
+        """
 
-    params = (
-        "EMP000000",
-        "Nguyễn Hữu Kiên",
-        "abc@gmail.com",
-        "0123456789",
-        "Nhân viên",
-    )
+        params = (
+            "EMP000000",
+            "Nguyễn Hữu Kiên",
+            "abc@gmail.com",
+            "0123456789",
+            "Nhân viên",
+        )
 
-    auth_manager.db_manager.execute_query(query, params)
+        auth_manager.db_manager.execute_query(query, params)
         
 
     if count == 0:

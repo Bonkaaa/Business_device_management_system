@@ -48,7 +48,7 @@ class Employee(Assignee):
     
     def get_assigned_devices(self) -> list[Device]:
         if self._inventory_manager:
-            return self._inventory_manager.get_devices_assigned_to_employee(self.get_id())
+            return self._inventory_manager.get_devices_by_assignee_id(self.get_id())
         return []
     
     def assign_device(self, device) -> None:
