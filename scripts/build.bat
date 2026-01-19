@@ -17,6 +17,9 @@ if errorlevel 1 (
 echo Initializing build environment...
 python -m venv .venv
 
+echo Activating virtual environment...
+call .venv\Scripts\activate.bat
+
 echo.
 echo Installing required packages...
 pip install -r requirement.txt

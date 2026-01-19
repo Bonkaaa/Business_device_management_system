@@ -19,6 +19,15 @@ try {
     exit 1
 }
 
+# Create virtual environment if it doesn't exist
+if (-Not (Test-Path ".venv")) {
+    Write-Host ""
+    Write-Host "Creating virtual environment..." -ForegroundColor Yellow
+    python -m venv .venv
+}
+# Activate virtual environment
+& ".\.venv\Scripts\Activate.ps1"
+
 Write-Host ""
 Write-Host "Installing required packages..." -ForegroundColor Yellow
 python -m pip install -r requirement.txt
