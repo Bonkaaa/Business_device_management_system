@@ -14,6 +14,9 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Initializing build environment...
+python -m venv .venv
+
 echo.
 echo Installing required packages...
 pip install -r requirement.txt
